@@ -1,375 +1,979 @@
-# Intel-Q Developer Guide
+# Intel-Q Developer's Guide
 
-**Project:** Intel-Q – Intelligent Queue Management System  
-**Framework:** Next.js (App Router)  
-**Language:** TypeScript  
-**Database:** PostgreSQL + Prisma  
-**Authentication:** Auth.js v5  
-**Styling:** Tailwind CSS + shadcn/ui  
-**Hosting:** Vercel
+## Consular Queue Management MVP
 
----
+### 1. Project Overview
 
-# Overview
+Intel-Q is a cloud-based queue management application designed to digitize customer flow for organizations that operate multiple service queues and service windows.
 
-Welcome to the Intel-Q development team!
+For the current MVP, Intel-Q is adapted to the operational reality of a **consular section**.
 
-This guide explains how to set up the local development environment, follow the team's coding standards, use GitHub effectively, and contribute to the project.
+The system allows customers to obtain queue tickets without creating accounts while allowing authorized staff to manage queues, call tickets, move tickets between service stages, and complete tickets.
 
-Following this guide helps ensure consistency, code quality, and smooth collaboration throughout the project.
+The application must remain simple, professional, reliable, and suitable for deployment in a real operational environment.
 
 ---
 
-# Technology Stack
-```
-_________________________________________________________
-| Technology               | Purpose                    |
-|--------------------------|----------------------------|
-| Next.js 15+ (App Router) | Full-stack React framework |
-| TypeScript               | Type safety                |
-| Tailwind CSS             | Styling                    |
-| shadcn/ui                | Reusable UI components     |
-| PostgreSQL               | Relational database        |
-| Prisma                   | ORM and type-safe database | 
-|                          | access                     |
-| Auth.js v5               | Authentication             |
-| Vercel                   | Deployment                 |
-| GitHub                   | Version Control            |
-| GitHub Projects          | Project Management         |
- _______________________________________________________
-```
----
+# 2. Current Consular Use Case
 
-# Local Development Setup
+The consular section provides services such as:
 
-## Prerequisites
+* Citizen Services
+* Immigrant Visas
+* Non-immigrant Visas
+* Notarials
+* Official/Diplomatic Visas
 
-Before starting development, install:
+A service may contain multiple operational queues or stages.
 
-- Node.js 20 or later
-- npm
-- Git
-- VS Code
-- Access to the Intel-Q GitHub repository
-- Access to the team's PostgreSQL database
+For example:
 
+**Immigrant Visa Services**
 
+* Intake
+* Interview
+* Payment
+* Delivery
+* On Hold
 
-## 1. Clone the Repository
+These stages are represented through the ticket's status.
 
-Clone the team's repository:
-
-```bash
-git clone https://github.com/nrb2002/intel-q.git
-
-cd intel-q
-```
-
-## 2. Install Dependencies
-
-Install the project dependencies:
-
-```bash
-npm install
-```
-
-If Prisma is not already installed, run:
-
-```bash
-npm install prisma @prisma/client
-```
-
----
-
-## 3. Configure Environment Variables
-
-Create a `.env.local` file in the project root.
-
-Example:
-
-```env
-DATABASE_URL="postgresql://username:password@hostname:5432/intelq"
-
-AUTH_SECRET="your-secret-key"
-
-AUTH_URL="http://localhost:3000"
-```
-
-The exact `DATABASE_URL` will depend on the PostgreSQL provider selected by the team.
-
-> **Important:** Never commit `.env.local` to GitHub. Environment variables must remain private.
-
-Whenever a new environment variable is required, update `.env.example` without including actual secrets.
-
-Example:
-
-```env
-DATABASE_URL=
-AUTH_SECRET=
-AUTH_URL=http://localhost:3000
-```
-
----
-
-## 4. Set Up the Database
-
-After configuring `DATABASE_URL`, run the Prisma migration:
-
-```bash
-npx prisma migrate dev
-```
-
-If the project contains existing migrations, Prisma will apply the required migrations to the local database.
-
-Generate the Prisma Client:
-
-```bash
-npx prisma generate
-```
-
----
-
-## 5. Start the Development Server
-
-Run:
-
-```bash
-npm run dev
-```
-
-Visit:
-
-```text
-http://localhost:3000
-```
-
----
-
-# Project Structure
-
-The project should follow a structure similar to:
-
-```text
-intel-q/
-│
-├── .github/
-│   ├── workflows/
-│   │   └── ...
-│   └── ...
-│
-├── .specify/
-│   └── ...
-│
-├── app/
-│   │
-│   ├── api/
-│   │   ├── auth/
-│   │   │   └── [...nextauth]/
-│   │   │       └── route.ts
-│   │   │
-│   │   ├── queues/
-│   │   │   ├── route.ts
-│   │   │   └── [id]/
-│   │   │       └── route.ts
-│   │   │
-│   │   ├── branches/
-│   │   │   ├── route.ts
-│   │   │   └── [id]/
-│   │   │       └── route.ts
-│   │   │
-│   │   └── users/
-│   │       └── me/
-│   │           └── route.ts
-│   │
-│   ├── dashboard/
-│   │   ├── layout.tsx
-│   │   ├── page.tsx
-│   │   │
-│   │   ├── queue/
-│   │   │   └── page.tsx
-│   │   │
-│   │   ├── branches/
-│   │   │   └── page.tsx
-│   │   │
-│   │   └── profile/
-│   │       └── page.tsx
-│   │
-│   ├── login/
-│   │   └── page.tsx
-│   │
-│   ├── register/
-│   │   └── page.tsx
-│   │
-│   ├── globals.css
-│   ├── layout.tsx
-│   └── page.tsx
-│
-├── components/
-│   │
-│   ├── layout/
-│   │   ├── Header.tsx
-│   │   ├── Sidebar.tsx
-│   │   ├── Footer.tsx
-│   │   └── Navigation.tsx
-│   │
-│   ├── auth/
-│   │   ├── LoginForm.tsx
-│   │   ├── RegisterForm.tsx
-│   │   └── LogoutButton.tsx
-│   │
-│   ├── queue/
-│   │   ├── QueueList.tsx
-│   │   ├── QueueTicketCard.tsx
-│   │   ├── QueueForm.tsx
-│   │   └── QueueStatusBadge.tsx
-│   │
-│   ├── branch/
-│   │   ├── BranchList.tsx
-│   │   ├── BranchCard.tsx
-│   │   └── BranchForm.tsx
-│   │
-│   ├── ui/
-│   │   ├── Button.tsx
-│   │   ├── Input.tsx
-│   │   ├── Card.tsx
-│   │   ├── Badge.tsx
-│   │   ├── Dialog.tsx
-│   │   ├── LoadingSpinner.tsx
-│   │   └── Toast.tsx
-│   │
-│   └── shared/
-│       ├── EmptyState.tsx
-│       ├── ErrorMessage.tsx
-│       └── LoadingState.tsx
-│
-├── lib/
-│   ├── db.ts
-│   ├── auth.ts
-│   └── utils.ts
-│
-├── models/
-│   ├── User.ts
-│   ├── QueueTicket.ts
-│   └── Branch.ts
-│
-├── services/
-│   ├── queueService.ts
-│   ├── branchService.ts
-│   └── userService.ts
-│
-├── hooks/
-│   └── ...
-│
-├── types/
-│   ├── auth.ts
-│   ├── queue.ts
-│   ├── branch.ts
-│   └── user.ts
-│
-├── utils/
-│   └── ...
-│
-├── public/
-│   └── ...
-│
-├── docs/
-│   ├── architecture.md
-│   ├── api-documentation.md
-│   ├── constitution.md
-│   ├── database-design.md
-│   ├── design-theme-branding.md
-│   ├── developer-guide.md
-│   ├── deployment-guide.md
-│   └── week-04-milestone.md
-│
-├── specs/
-│   └── ...
-│
-├── templates/
-│   └── ...
-│
-├── .env.example
-├── .env.local
-├── .gitignore
-├── .prettierrc
-├── AGENTS.md
-├── CLAUDE.md
-├── README.md
-├── board.md
-├── eslint.config.mjs
-├── next.config.ts
-├── package.json
-├── package-lock.json
-├── postcss.config.mjs
-├── spec-kit.yaml
-└── tsconfig.json
-```
-
----
-
-# Directory Responsibilities
-
-## `app/`
-
-The `app/` directory is the primary Next.js App Router directory.
-
-It contains:
-
-* Public pages
-* Authentication pages
-* Dashboard pages
-* Layouts
-* API Route Handlers
-* Global styles
-
-The current repository already uses this root-level `app/` structure, so the team should **not move it to `src/app/`** unless the entire project is intentionally reorganized.
-
----
-
-## `app/api/`
-
-Contains Next.js Route Handlers that implement the server-side API.
+A ticket may move between statuses in either direction when operational circumstances require it.
 
 Example:
 
 ```text
-app/api/queues/route.ts
+INTAKE
+   ↓
+INTERVIEW
+   ↓
+PAYMENT
+   ↓
+DELIVERY
 ```
 
-Responsibilities include:
+But a ticket may also move backward or be placed on hold:
 
-* Handling HTTP requests
-* Validating request data
-* Checking authentication
-* Calling service functions
-* Reading and writing database records
-* Returning typed responses
+```text
+INTAKE
+   ↓
+INTERVIEW
+   ↓
+ON_HOLD
+   ↓
+INTERVIEW
+```
 
-The API layer should not contain unnecessary UI logic.
-
----
-
-## `app/dashboard/`
-
-Contains authenticated application views.
-
-The dashboard should provide different functionality depending on the authenticated user's role.
-
-Possible roles include:
-
-* Customer
-* Staff
-* Administrator
-
-The MVP should prioritize the customer and staff queue workflows before implementing advanced administrator features.
+The system must therefore not assume that queue progression is always linear.
 
 ---
 
-## `components/`
+# 3. Core Design Principles
 
-Contains reusable React components.
+Intel-Q should follow these principles:
 
-Components should be grouped by responsibility rather than placing every component in one large directory.
+### Simple
+
+Customers should be able to obtain a ticket with minimal interaction.
+
+### No customer accounts
+
+Customers must **not** be required to register or log in to obtain a ticket.
+
+### Lightweight identification
+
+Before receiving a ticket, the customer must provide at least their **first name**.
+
+The first name is associated with the queue ticket and printed on the ticket.
+
+It is not a customer account and must not be treated as strong authentication.
+
+### Operational privacy
+
+Customer names must not be displayed publicly on the customer-facing queue display.
+
+The public display should primarily show:
+
+* Ticket number
+* Service
+* Window
+* Queue/status information where appropriate
+
+### Server-generated tickets
+
+Customers must never choose or submit their own ticket number.
+
+The server generates the ticket number.
+
+### Flexible workflow
+
+Tickets can move between statuses in either direction.
+
+### Auditable timing
+
+The system records how long a ticket spends in each status and the total processing time.
+
+### Staff-driven operations
+
+Staff members control queue progression from the staff interface.
+
+---
+
+# 4. User Roles
+
+The MVP has three conceptual roles.
+
+## Customer
+
+Customers do not authenticate.
+
+They can:
+
+* Access the public Services page
+* View currently available services
+* Select a service
+* Enter their first name
+* Generate a ticket
+* Print a ticket
+* Download a ticket when using a personal device
+
+Customers cannot:
+
+* Modify tickets
+* Change ticket status
+* Call tickets
+* Access staff functionality
+* Access administrative functionality
+
+---
+
+## Staff
+
+Staff members authenticate through the staff login route.
+
+Staff can:
+
+* View available services
+* View pending tickets
+* View tickets assigned to their current queue/window
+* Call the next ticket
+* Recall a ticket where appropriate
+* Move tickets to another status
+* Place tickets on hold
+* Return tickets from hold
+* Complete/destroy tickets after final service
+* View relevant ticket information
+
+Staff should not be responsible for changing global application configuration.
+
+---
+
+## Administrator
+
+Administrators authenticate through the administrator login route.
+
+Administrators can manage system configuration and operational settings.
+
+Depending on the final MVP scope, this may include:
+
+* Services
+* Queue/status configuration
+* Windows
+* Staff accounts
+* Branch/location information
+* Organization settings
+* Application configuration
+* Operational reports
+
+---
+
+# 5. Authentication Routes
+
+The application must provide separate authentication entry points for staff and administrators.
+
+Conceptually:
+
+```text
+/staff/login
+/admin/login
+```
+
+Customers do not have an authentication route.
+
+The public customer interface must remain accessible without authentication.
+
+Authorization must be enforced server-side.
+
+Hiding UI elements is not sufficient security.
+
+---
+
+# 6. Customer Journey
+
+The customer journey is intentionally short.
+
+```text
+Customer Welcome Page
+        ↓
+Services Page
+        ↓
+Select Service
+        ↓
+Enter First Name
+        ↓
+Generate Ticket
+        ↓
+Print / Download Ticket
+        ↓
+Wait for Call
+```
+
+---
+
+# 7. Customer Welcome Page
+
+The welcome page is the primary entry point for customers.
+
+It should clearly provide access to the Services page.
+
+The page should include:
+
+* Organization/consular branding
+* Clear instructions
+* Services access button/link
+* QR code leading to the Services page
+
+The QR code is particularly useful for customers who can use a smartphone.
+
+Customers who cannot use a smartphone can use the touch-screen device provided in the waiting area.
+
+---
+
+# 8. Services Page
+
+The Services page is public.
+
+No authentication is required.
+
+It displays services that are currently available.
+
+For example:
+
+```text
+Welcome
+
+Please select the service you require.
+
+[ Citizen Services ]
+
+[ Immigrant Visas ]
+
+[ Non-immigrant Visas ]
+
+[ Notarials ]
+
+[ Official / Diplomatic Visas ]
+```
+
+Services that have not been opened by staff must not be available for ticket creation.
+
+---
+
+# 9. Opening Services
+
+Every morning, authorized staff or administrators can open the required services.
+
+Conceptually:
+
+```text
+Service
+       ↓
+OPEN
+       ↓
+Visible to customers
+```
+
+A closed service should not appear as an available ticket option.
+
+This allows the system to adapt to daily operational conditions.
+
+For example, if the consular section is only processing:
+
+* Citizen Services
+* Immigrant Visas
+
+those are the services presented to customers.
+
+---
+
+# 10. Customer Identification
+
+Before generating a ticket, the customer must provide a first name.
+
+Example:
+
+```text
+Immigrant Visa Services
+
+Please enter your first name:
+
+[ Jean                 ]
+
+[ Get Ticket ]
+```
+
+The first name should be validated before ticket creation.
+
+At minimum:
+
+* Required
+* Trimmed
+* Reasonable maximum length
+* No empty/whitespace-only values
+
+The customer does not provide:
+
+* Password
+* Email
+* Phone number
+* Username
+* Account credentials
+
+---
+
+# 11. Ticket Generation
+
+Ticket numbers are generated by the server.
+
+The customer must never be able to select a ticket number.
+
+Example:
+
+```text
+Customer:
+
+First name: Jean
+Service: Immigrant Visa
+
+        ↓
+
+Server
+
+        ↓
+
+Ticket: IV-042
+```
+
+Ticket generation must be atomic to avoid duplicate ticket numbers.
+
+---
+
+# 12. Ticket Contents
+
+A printed ticket should contain enough information for operational identification.
+
+Example:
+
+```text
+--------------------------------
+          INTEL-Q
+
+    Immigrant Visa Services
+
+Ticket: IV-042
+Name: Jean
+
+Issued: 09:42
+
+Please wait for your ticket
+to be called.
+--------------------------------
+```
+
+The ticket may also contain:
+
+* Organization name
+* Service name
+* Date
+* Ticket number
+* First name
+* Issue time
+* Instructions
+
+If generated from a customer's phone, the ticket should provide an option to download or print it.
+
+---
+
+# 13. Customer Privacy
+
+The customer's first name is operational information and should not be unnecessarily exposed.
+
+The public customer display should not show:
+
+```text
+Jean — IV-042
+```
+
+Instead, it should display:
+
+```text
+NOW SERVING
+
+IV-042
+
+WINDOW 3
+```
+
+The first name should primarily be available to authorized staff and printed on the customer's ticket.
+
+The first name is an operational identifier, not a formal identity-verification mechanism.
+
+Where consular procedures require identity verification, staff must continue to perform the required document or identity checks.
+
+---
+
+# 14. Ticket Lifecycle
+
+A ticket represents a customer moving through one or more service stages.
+
+Example:
+
+```text
+Ticket Created
+      ↓
+INTAKE
+      ↓
+INTERVIEW
+      ↓
+PAYMENT
+      ↓
+DELIVERY
+      ↓
+COMPLETED
+```
+
+However, the workflow must support non-linear movement.
+
+Example:
+
+```text
+INTERVIEW
+    ↓
+ON_HOLD
+    ↓
+INTERVIEW
+```
+
+or:
+
+```text
+PAYMENT
+    ↓
+INTERVIEW
+```
+
+if operational circumstances require the ticket to return to an earlier stage.
+
+---
+
+# 15. Ticket Status
+
+The ticket status represents the customer's current operational queue.
+
+For example:
+
+```text
+WAITING
+CALLED
+IN_SERVICE
+ON_HOLD
+INTERVIEW
+PAYMENT
+DELIVERY
+COMPLETED
+```
+
+The exact status configuration should be determined by the configured service workflow.
+
+A service may have different statuses from another service.
+
+For example:
+
+```text
+Immigrant Visa
+
+INTAKE
+INTERVIEW
+PAYMENT
+DELIVERY
+ON_HOLD
+```
+
+while:
+
+```text
+Notarials
+
+INTAKE
+PROCESSING
+PAYMENT
+COMPLETED
+```
+
+The application should therefore avoid hard-coding consular-specific workflow assumptions into the core queue engine.
+
+---
+
+# 16. Ticket Status Transitions
+
+A status transition must be recorded.
+
+Example:
+
+```text
+Ticket IV-042
+
+INTAKE
+  ↓
+INTERVIEW
+```
+
+The system records:
+
+* Previous status
+* New status
+* Timestamp
+* Staff member
+* Relevant window
+
+This creates an operational history for the ticket.
+
+---
+
+# 17. Waiting Time
+
+The system must calculate how long a ticket spends in each stage.
+
+Example:
+
+```text
+Ticket: IV-042
+
+Intake:
+09:42 → 10:01
+19 minutes
+
+Interview:
+10:01 → 10:35
+34 minutes
+
+Payment:
+10:35 → 10:44
+9 minutes
+
+Delivery:
+10:44 → 10:50
+6 minutes
+```
+
+Total:
+
+```text
+Total processing/waiting time:
+68 minutes
+```
+
+The underlying system should retain timestamps rather than only storing the calculated duration.
+
+This allows reporting and analysis later.
+
+---
+
+# 18. Ticket History
+
+Each status change should produce a history record.
+
+Conceptually:
+
+```text
+TicketHistory
+
+ticketId
+previousStatus
+newStatus
+changedAt
+staffId
+windowId
+```
+
+This allows the application to reconstruct the complete lifecycle of a ticket.
+
+---
+
+# 19. Staff Workflow
+
+A staff member logs in and accesses the service/queue management interface.
+
+The interface should allow them to see relevant pending tickets.
+
+Example:
+
+```text
+IMMIGRANT VISA — INTAKE
+
+Waiting:
+
+IV-041
+IV-042
+IV-043
+
+[ Call Next ]
+```
+
+When the staff member calls the next ticket:
+
+```text
+IV-041
+```
+
+the ticket becomes the active ticket.
+
+The staff member's window is associated with the call.
+
+---
+
+# 20. Calling a Ticket
+
+When a ticket is called:
+
+1. The ticket is selected.
+2. Its status changes appropriately.
+3. The current window is recorded.
+4. The call timestamp is recorded.
+5. The customer display updates in real time.
+6. An audible announcement is played.
+
+Example customer display:
+
+```text
+NOW SERVING
+
+IV-041
+
+WINDOW 2
+```
+
+Audio:
+
+> "Ticket I-V zero four one, please proceed to window two."
+
+The actual voice implementation should use browser/device-supported text-to-speech or another appropriate audio service.
+
+---
+
+# 21. Customer Display
+
+The Customer Display is a public endpoint.
+
+It should show:
+
+* Currently called tickets
+* Window numbers
+* Relevant service information
+* Next pending tickets where appropriate
+
+Example:
+
+```text
+NOW SERVING
+
+IV-041       WINDOW 2
+IV-038       WINDOW 4
+
+NEXT
+
+IV-042
+IV-043
+```
+
+The interface must automatically update when staff call tickets.
+
+No customer login is required.
+
+---
+
+# 22. Real-Time Updates
+
+Queue operations are time-sensitive.
+
+The customer display should not require users to manually refresh the browser.
+
+The application should eventually use a real-time mechanism such as:
+
+* WebSockets
+* Server-Sent Events
+* Managed realtime infrastructure
+* Appropriate database/event subscriptions
+
+For the initial MVP, polling may be acceptable if necessary, but the architecture should allow migration to true realtime communication.
+
+---
+
+# 23. Completing a Ticket
+
+The final service window completes the customer's journey.
+
+For example:
+
+```text
+DELIVERY
+   ↓
+COMPLETED
+```
+
+Once completed, the ticket should no longer appear in active queues.
+
+The system should retain its historical information for reporting rather than physically destroying the underlying database record.
+
+The phrase "destroy the ticket" therefore means:
+
+> **Remove the ticket from active operational queues while retaining the historical record required for auditing and analytics.**
+
+This is important for data integrity.
+
+---
+
+# 24. Staff Windows
+
+A window represents the physical service point where a staff member serves a customer.
+
+Example:
+
+```text
+Window 1
+Window 2
+Window 3
+Window 4
+```
+
+When a staff member calls a ticket, the system records the window.
+
+Example:
+
+```text
+Ticket: IV-042
+Status: INTERVIEW
+Window: 3
+Staff: Staff Member
+Called: 10:01
+```
+
+A staff member should be able to work from an authorized service/queue management page rather than being permanently tied to a single service.
+
+---
+
+# 25. Service and Queue Separation
+
+The application should distinguish between:
+
+### Service
+
+What the customer is requesting.
+
+Example:
+
+```text
+Immigrant Visa
+```
+
+### Queue/Status
+
+Where the ticket currently is in the operational workflow.
+
+Example:
+
+```text
+Interview
+```
+
+Therefore:
+
+```text
+Service:
+Immigrant Visa
+
+Current Queue:
+Interview
+```
+
+This distinction is essential.
+
+A customer should select the **service**, not an internal operational queue.
+
+---
+
+# 26. Existing Database Structure
+
+The existing core data model should remain intact.
+
+The current architecture already provides the foundation around:
+
+* User
+* Branch
+* QueueTicket
+
+The consular workflow should be implemented around this existing structure rather than replacing the database architecture unnecessarily.
+
+Where additional operational data is required, it should be added carefully and consistently with the existing Prisma/PostgreSQL architecture.
+
+The project should avoid introducing a separate customer-account model merely to store ticket holders.
+
+---
+
+# 27. Customer Accounts
+
+Customer accounts are outside the current MVP.
+
+Do not implement:
+
+```text
+Customer Registration
+Customer Login
+Customer Password
+Customer Profile
+```
+
+for the public ticketing workflow.
+
+A ticket is sufficient to participate in the queue.
+
+---
+
+# 28. Security
+
+All staff and administrative operations must be protected by server-side authentication and authorization.
+
+Never rely solely on:
+
+* Hidden buttons
+* Client-side role checks
+* Disabled UI elements
+* Route visibility
+
+The API must independently verify:
+
+```text
+Authenticated?
+      ↓
+Correct role?
+      ↓
+Authorized operation?
+```
+
+Public ticket creation is intentionally unauthenticated but must still validate all submitted data server-side.
+
+---
+
+# 29. Validation
+
+Use Zod for request validation.
+
+The same principle already used by:
+
+```text
+lib/validations/
+```
+
+should continue to be followed.
+
+Customer ticket creation should validate at least:
+
+```text
+firstName
+serviceId
+```
+
+The server must never trust client-side validation.
+
+---
+
+# 30. API Architecture
+
+The application should maintain clear separation between:
+
+### Public APIs
+
+Used by customers and public displays.
+
+Examples:
+
+```text
+GET  /api/services
+POST /api/tickets
+GET  /api/display
+```
+
+### Staff APIs
+
+Used for queue operations.
+
+Examples:
+
+```text
+GET   /api/queues
+POST  /api/tickets/:id/call
+PATCH /api/tickets/:id/status
+POST  /api/tickets/:id/complete
+```
+
+### Administrative APIs
+
+Used for configuration.
+
+Examples:
+
+```text
+POST   /api/services
+PATCH  /api/services/:id
+DELETE /api/services/:id
+POST   /api/windows
+PATCH  /api/windows/:id
+```
+
+Exact endpoints should be finalized as implementation progresses.
+
+---
+
+# 31. Current Branch Functionality
+
+The existing branch API supports:
+
+```text
+GET    /api/branches
+POST   /api/branches
+GET    /api/branches/:id
+PATCH  /api/branches/:id
+DELETE /api/branches/:id
+```
+
+Branch management is restricted to authenticated staff/administrators as appropriate.
+
+The existing branch components include:
+
+```text
+BranchCard
+BranchForm
+BranchList
+CreateBranchForm
+```
+
+These should continue to follow the established API and Prisma architecture.
+
+---
+
+# 32. UI Components
+
+Components should remain modular.
 
 For example:
 
@@ -377,1104 +981,409 @@ For example:
 components/
 ├── auth/
 ├── branch/
-├── layout/
 ├── queue/
-├── shared/
-└── ui/
+├── ticket/
+├── services/
+├── display/
+└── admin/
 ```
 
-Components should be reused across multiple pages whenever practical.
+Avoid placing the entire queue-management application inside one large component.
+
+Each component should have a clear responsibility.
 
 ---
 
-## `lib/`
+# 33. Public Customer Interface
 
-Contains shared infrastructure and configuration.
+The customer interface should be optimized for:
 
-Examples:
+* Touch screens
+* Tablets
+* Smartphones
+* Simple navigation
+* Large buttons
+* High contrast
+* Minimal typing
+* Clear instructions
+
+The customer should be able to obtain a ticket within a few interactions.
+
+The interface must not assume that every customer owns a smartphone.
+
+---
+
+# 34. Ticket Printing
+
+The ticket-generation flow should support:
+
+### Touch-screen/kiosk
 
 ```text
-lib/db.ts
-lib/auth.ts
-lib/utils.ts
+Generate Ticket
+      ↓
+Print
 ```
 
-Responsibilities include:
-
-* Database connection
-* Auth.js configuration
-* Shared utility functions
-* Common server-side helpers
-
----
-
-## `models/`
-
-Contains database models and schemas.
-
-For the Intel-Q MVP, the core models are:
+### Smartphone
 
 ```text
-models/
-├── User.ts
-├── QueueTicket.ts
-└── Branch.ts
+Generate Ticket
+      ↓
+Download Ticket
+      ↓
+Optional Print
 ```
 
-The models should reflect the team's approved database design.
-
-Because the team has decided to use PostgreSQL, these should eventually be implemented using the selected PostgreSQL database access layer or ORM rather than Mongoose.
+The downloadable ticket should be suitable for showing to staff if permitted by the operating environment.
 
 ---
 
-## `services/`
+# 35. Phone Restrictions
 
-Contains server-side business logic.
+Some consular sections may prohibit phones inside the premises.
 
-Examples:
+The application must therefore not depend on a customer's phone for queue participation.
 
-```text
-services/
-├── queueService.ts
-├── branchService.ts
-└── userService.ts
-```
-
-Services should handle operations such as:
-
-* Creating queue tickets
-* Retrieving active queues
-* Updating ticket status
-* Removing queue tickets
-* Creating branches
-* Updating branches
-
-Keeping business logic in services helps prevent API Route Handlers from becoming too large.
-
----
-
-## `types/`
-
-Contains shared TypeScript types.
-
-Examples:
-
-```text
-types/
-├── auth.ts
-├── queue.ts
-├── branch.ts
-└── user.ts
-```
-
-Shared types should be used for:
-
-* Component props
-* API request payloads
-* API responses
-* Database-related data
-* Authentication data
-
-Avoid using `any`.
-
----
-
-## `hooks/`
-
-Contains custom React hooks.
-
-Hooks should only be created when reusable client-side behavior is needed.
-
-Examples might include:
-
-```text
-useQueue.ts
-useAuth.ts
-useToast.ts
-```
-
-Do not create a custom hook simply to wrap a single function unless it provides meaningful reuse or abstraction.
-
----
-
-## `utils/`
-
-Contains general-purpose utility functions that do not belong specifically to database, authentication, or business logic.
-
-Examples include:
-
-* Formatting dates
-* Formatting ticket numbers
-* Validation helpers
-* Display formatting
-
----
-
-## `docs/`
-
-Contains project documentation.
-
-The current repository already has a dedicated `docs/` directory. This is the appropriate location for the team's architectural and development documentation.
-
-Recommended documents include:
-
-```text
-docs/
-├── architecture.md
-├── api-documentation.md
-├── constitution.md
-├── database-design.md
-├── design-theme-branding.md
-├── developer-guide.md
-├── deployment-guide.md
-└── week-04-milestone.md
-```
-
----
-
-## `specs/`
-
-Contains project specifications generated and maintained through the Spec-Kit workflow.
-
-The team should keep the formal feature specification here rather than mixing specification documents with application source code.
-
----
-
-## `.specify/`
-
-Contains Spec-Kit configuration, templates, and supporting files.
-
-This directory is generated and maintained as part of the Spec-Kit workflow. Team members should avoid manually deleting or restructuring it unless they understand the impact on the Spec-Kit tooling.
-
----
-
-## `public/`
-
-Contains static assets.
-
-Examples:
-
-```text
-public/
-├── images/
-├── icons/
-└── ...
-```
-
-Use this directory for assets that need to be publicly accessible.
-
----
-
-# MVP Priority Structure
-
-Because the team has **five members** and a limited development timeline, the following areas should receive the highest priority:
-
-## Priority 1 – Application Foundation
-
-```text
-app/
-lib/
-types/
-```
-
-Establish:
-
-* Next.js App Router
-* Global layout
-* Environment configuration
-* Database connection
-* Authentication foundation
-
-## Priority 2 – Authentication
-
-```text
-app/login/
-app/register/
-components/auth/
-lib/auth.ts
-```
-
-Implement:
-
-* Registration
-* Login
-* Logout
-* Protected routes
-* Session handling
-
-## Priority 3 – Queue Management
-
-```text
-app/dashboard/queue/
-app/api/queues/
-components/queue/
-services/queueService.ts
-```
-
-Implement:
-
-* Create queue ticket
-* View active queue
-* Update queue status
-* Delete/cancel queue ticket
-
-## Priority 4 – Shared UI
-
-```text
-components/layout/
-components/ui/
-components/shared/
-```
-
-Implement reusable:
-
-* Header
-* Sidebar
-* Navigation
-* Buttons
-* Inputs
-* Cards
-* Status badges
-* Loading states
-* Error states
-* Empty states
-
-## Priority 5 – Branch Management
-
-```text
-app/dashboard/branches/
-app/api/branches/
-components/branch/
-services/branchService.ts
-```
-
-Implement branch CRUD after the core queue workflow is functional.
-
----
-
-# Recommended Development Order
-
-The team should implement the project in approximately this order:
-
-```text
-1. Existing Next.js foundation
-        ↓
-2. Database configuration
-        ↓
-3. Core data models
-        ↓
-4. Authentication
-        ↓
-5. Shared design system
-        ↓
-6. Dashboard layout
-        ↓
-7. Queue API
-        ↓
-8. Queue UI
-        ↓
-9. Branch management
-        ↓
-10. Error and loading states
-        ↓
-11. Responsive design review
-        ↓
-12. Testing and code review
-        ↓
-13. Vercel deployment
-```
-
-This order ensures that the team establishes the technical foundation before building the main queue workflow.
-
----
-
-# Important Repository Alignment Notes
-
-The following points are important for keeping the documentation synchronized with the actual GitHub repository:
-
-1. **Keep `app/` at the repository root.** The current project does not use `src/app/`.
-2. **Keep project documentation under `docs/`.**
-3. **Keep Spec-Kit files under `.specify/` and specification work under `specs/`.**
-4. **Do not create duplicate documentation folders.**
-5. **Do not introduce a second application root such as `src/` unless the team explicitly decides to migrate the project.**
-6. **Update this structure whenever a major architectural decision changes.**
-7. **Keep the README synchronized with the actual repository structure and setup instructions.**
-
----
-
-# Definition of Done
-
-The project structure is considered established when:
-
-* The Next.js application runs successfully from the root-level `app/` directory.
-* Shared components are organized under `components/`.
-* Database infrastructure is organized under `lib/` and `models/` or the team's selected PostgreSQL data-access structure.
-* Authentication configuration is centralized.
-* Business logic is separated into services where appropriate.
-* Shared TypeScript types are organized under `types/`.
-* Project documentation is stored under `docs/`.
-* Spec-Kit files remain organized under `.specify/` and `specs/`.
-* Team members understand where new files should be created.
-* No duplicate or conflicting project structures exist.
-* The structure supports the Intel-Q MVP without unnecessary complexity.
-
-
-
----
-
-# Git Workflow
-
-## Create a Feature Branch
-
-Always create a feature branch from the latest `main` branch with the name of the feature and the team-member who submitted it.
-
-```bash
-git checkout main
-git pull origin main
-
-git checkout -b feature/team-member
-```
-
-Examples:
-
-```text
-authentication/Sunday
-database/Nompilo
-developer-guide/Baron
-```
-
-Use one branch for one logical feature or issue whenever practical.
-
----
-
-## Commit Changes
-
-Use clear, descriptive commit messages.
-
-Examples:
-
-```text
-feat: add queue ticket API
-
-fix: resolve login redirect issue
-
-docs: update developer guide
-
-refactor: simplify Prisma database connection
-
-style: improve dashboard layout
-
-test: add queue API validation tests
-```
-
-Keep commits focused and avoid combining unrelated changes.
-
----
-
-## Push Your Branch
-
-Push your feature branch to GitHub:
-
-```bash
-git push origin developer-guide/Baron
-```
-
-Open a Pull Request and reference the related GitHub issue.
+The physical waiting-area device should provide the complete ticket-generation workflow.
 
 Example:
 
 ```text
-Closes #6
+Touchscreen iPad
+       ↓
+Services
+       ↓
+First Name
+       ↓
+Generate Ticket
+       ↓
+Printer
+       ↓
+Paper Ticket
 ```
 
----
-
-# Pull Request Checklist
-
-Before submitting a Pull Request:
-
-* [ ] Acceptance criteria have been completed.
-* [ ] Project builds successfully.
-* [ ] No TypeScript errors exist.
-* [ ] No ESLint errors exist.
-* [ ] Feature has been manually tested.
-* [ ] Responsive behavior has been verified.
-* [ ] Related GitHub issue is referenced.
-* [ ] Documentation has been updated if necessary.
-* [ ] No secrets or environment variables have been committed.
-
-At least one teammate should review and approve the Pull Request before merging.
+The customer's first name and ticket number printed on the paper ticket provide the operational reference.
 
 ---
 
-# Coding Standards
+# 36. Public Display Privacy
 
-## TypeScript
+Do not expose unnecessary personal information on public screens.
 
-* Enable strict TypeScript mode.
-* Avoid using `any`.
-* Define interfaces or types for component props.
-* Define types for API request and response data.
-* Use Prisma-generated types where appropriate.
-* Prefer explicit and descriptive types.
-* Avoid unnecessary type assertions.
+Preferred:
 
-Example:
+```text
+NOW SERVING
 
-```ts
-interface QueueTicket {
-  id: string;
-  ticketNumber: number;
-  status: "WAITING" | "IN_SERVICE" | "COMPLETED" | "CANCELLED";
-}
+IV-042
+WINDOW 3
 ```
 
+Avoid:
+
+```text
+NOW SERVING
+
+Jean Tshibasu
+IV-042
+WINDOW 3
+```
+
+Only the minimum operational information required should be publicly visible.
+
 ---
 
-## React Components
+# 37. Analytics
 
-* Use functional components.
-* Prefer Server Components by default.
-* Use Client Components only when interactivity, browser APIs, or client-side state is required.
-* Keep components focused on a single responsibility.
-* Extract repeated UI patterns into reusable components.
-* Avoid unnecessarily large components.
+The system should retain timestamp information sufficient to calculate:
+
+* Time waiting for service
+* Time being served
+* Time on hold
+* Time between service stages
+* Total ticket lifecycle duration
+* Average service time
+* Average waiting time
+* Queue volume
+* Service demand
+* Window utilization
+* Tickets completed
+* Tickets placed on hold
+* Tickets returned to previous stages
+
+This data will become important for operational decision-making.
 
 ---
 
-## File Naming
+# 38. Auditability
 
-| Item              | Convention              |
-| ----------------- | ----------------------- |
-| React Components  | PascalCase              |
-| Hooks             | camelCase               |
-| Utility files     | camelCase or kebab-case |
-| Routes            | kebab-case              |
-| Prisma schema     | `schema.prisma`         |
-| Database client   | `prisma.ts`             |
-| Types             | PascalCase              |
-| API route folders | kebab-case              |
+Important actions should be traceable.
 
 Examples:
 
 ```text
-QueueCard.tsx
-Header.tsx
-useQueue.ts
-queue-utils.ts
-prisma.ts
-schema.prisma
+Ticket created
+Ticket called
+Ticket recalled
+Status changed
+Ticket placed on hold
+Ticket resumed
+Ticket completed
 ```
 
----
+Where applicable, record:
 
-# Folder Responsibilities
-
-## app/
-
-Contains:
-
-* Pages
-* Layouts
-* Loading states
-* Error states
-* API Route Handlers
+* User/staff member
+* Timestamp
+* Previous state
+* New state
+* Window
+* Service
 
 ---
 
-## components/
+# 39. Cloud Deployment
 
-Contains reusable UI and layout components.
+Intel-Q is intended to be deployed as a cloud-based application.
 
-Examples:
+The architecture should therefore keep:
 
-```text
-Header
-Sidebar
-Footer
-QueueCard
-QueueStatusBadge
-LoadingSpinner
-EmptyState
-```
+* Database credentials server-side
+* Authentication secrets server-side
+* API authorization server-side
+* Environment variables secure
+* Client-side code free of sensitive credentials
+
+The application should be compatible with the project's existing Next.js deployment environment.
 
 ---
 
-## lib/
+# 40. Development Stack
 
-Contains shared infrastructure and configuration.
+The current project uses:
 
-Examples:
-
-```text
-prisma.ts
-auth.ts
-```
-
----
-
-## prisma/
-
-Contains the Prisma database schema and migration-related files.
-
-Primary file:
-
-```text
-prisma/schema.prisma
-```
-
----
-
-## services/
-
-Contains reusable server-side business logic and database operations when separating business logic from Route Handlers is appropriate.
-
----
-
-## hooks/
-
-Contains reusable React Client Hooks.
-
-Examples:
-
-```text
-useQueue.ts
-useAuth.ts
-```
-
----
-
-## types/
-
-Contains shared TypeScript types that are reused across multiple parts of the application.
-
----
-
-## utils/
-
-Contains small reusable helper functions.
-
----
-
-# Database Guidelines
-
-Intel-Q uses **PostgreSQL** as its primary database and **Prisma** as the ORM.
-
-The core MVP data models are:
-
-* User
-* QueueTicket
-* Branch
-
-The primary relationships are:
-
-```text
-User
-  │
-  │ 1
-  │
-  │ *
-QueueTicket
-  │
-  │ *
-  │
-  │ 1
-Branch
-```
-
-A user can have multiple queue tickets.
-
-A branch can have multiple queue tickets.
-
-Each queue ticket belongs to one customer and one branch.
-
----
-
-## Prisma Guidelines
-
-Use Prisma for database access.
-
-Example:
-
-```ts
-const tickets = await prisma.queueTicket.findMany({
-  where: {
-    status: "WAITING",
-  },
-});
-```
-
-Database operations should remain on the server.
-
-Do not expose the Prisma Client directly to browser-side Client Components.
-
-Use:
-
-* Server Components
-* Route Handlers
-* Server Actions
-* Server-side service functions
-
-for database operations.
-
----
-
-## Database Schema Changes
-
-When modifying `schema.prisma`, create a migration:
-
-```bash
-npx prisma migrate dev --name describe-your-change
-```
-
-Example:
-
-```bash
-npx prisma migrate dev --name add_queue_ticket_status
-```
-
-After modifying the schema, regenerate Prisma Client:
-
-```bash
-npx prisma generate
-```
-
-Commit the migration files to GitHub.
-
-Do not manually modify the production database without documenting the change.
-
----
-
-# Authentication
-
-Intel-Q uses **Auth.js v5** for authentication.
-
-Protected pages should verify authentication on the server.
-
-Authentication and authorization logic should remain on the server whenever possible.
-
-Never expose:
-
-* Database credentials
-* Auth secrets
-* Password hashes
-* Private environment variables
-
-to Client Components or browser code.
-
-Role-based access should be enforced server-side.
-
-Example roles:
-
-```text
-CUSTOMER
-STAFF
-ADMIN
-```
-
----
-
-# Styling Guidelines
-
-Use:
-
+* Next.js
+* React
+* TypeScript
 * Tailwind CSS
-* shadcn/ui
-* The project's defined design theme
+* PostgreSQL
+* Prisma ORM
+* NextAuth/Auth.js authentication
+* Zod validation
+* bcrypt password hashing
 
-Avoid custom CSS unless absolutely necessary.
+These technologies should remain consistent unless a deliberate architectural decision is made.
 
-Maintain consistent:
+---
 
-* Colors
-* Typography
-* Spacing
-* Borders
-* Shadows
-* Component styles
+# 41. Development Rules
 
-Refer to:
+When implementing new functionality:
+
+1. Reuse existing Prisma models where possible.
+2. Reuse existing authentication infrastructure.
+3. Validate requests with Zod.
+4. Validate data on the server.
+5. Keep customer workflows unauthenticated.
+6. Keep staff/admin workflows authenticated.
+7. Keep authorization on the server.
+8. Do not expose customer names on public displays.
+9. Generate ticket numbers server-side.
+10. Store timestamps for status transitions.
+11. Do not physically delete completed tickets when historical data is required.
+12. Keep components small and reusable.
+13. Avoid hard-coding the consular workflow into generic queue logic.
+14. Keep the UI accessible and touch-friendly.
+15. Avoid unnecessary changes to the existing database architecture.
+
+---
+
+# 42. Target Architecture
+
+The intended high-level architecture is:
 
 ```text
-docs/design-theme-branding.md
+                    ┌─────────────────────┐
+                    │   Customer Welcome  │
+                    │       Page          │
+                    └──────────┬──────────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │    Services Page    │
+                    │     Public           │
+                    └──────────┬──────────┘
+                               │
+                     Select Service
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │   Enter First Name  │
+                    └──────────┬──────────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │  Generate Ticket    │
+                    └──────────┬──────────┘
+                               │
+                  ┌────────────┴────────────┐
+                  ▼                         ▼
+             Print Ticket              Download
+                  │
+                  ▼
+             Waiting Area
+                  │
+                  │
+                  ▼
+        ┌───────────────────────┐
+        │   Staff Queue UI      │
+        │                       │
+        │ Call / Status / Hold  │
+        └───────────┬───────────┘
+                    │
+                    ▼
+        ┌───────────────────────┐
+        │ Customer Display      │
+        │                       │
+        │ Ticket + Window       │
+        │ Audio Announcement    │
+        └───────────────────────┘
 ```
-
-for the project's approved visual design.
 
 ---
 
-# Responsive Design
+# 43. MVP Success Criteria
 
-Intel-Q must support:
-
-* Mobile
-* Tablet
-* Desktop
-
-Use Tailwind responsive utilities:
+The MVP should be considered operationally successful when the following workflow works from beginning to end:
 
 ```text
-sm:
-md:
-lg:
-xl:
+1. Staff logs in.
+
+2. Staff opens a service.
+
+3. Service becomes visible publicly.
+
+4. Customer opens the Services page.
+
+5. Customer selects a service.
+
+6. Customer enters a first name.
+
+7. Server generates a unique ticket.
+
+8. Customer prints or downloads the ticket.
+
+9. Ticket appears in the appropriate queue.
+
+10. Staff calls the ticket.
+
+11. Customer display updates.
+
+12. Audible announcement plays.
+
+13. Staff changes the ticket status.
+
+14. Ticket appears in the next appropriate queue.
+
+15. Another staff member calls the ticket.
+
+16. The process repeats.
+
+17. Final staff member completes the ticket.
+
+18. Ticket disappears from active queues.
+
+19. Ticket history remains available for analytics.
+
+20. Timing data is retained for reporting.
 ```
-
-Test layouts at multiple screen sizes before submitting a Pull Request.
-
-Prioritize mobile usability for customer-facing queue interactions.
 
 ---
 
-# Error Handling
+# 44. Important Product Principle
 
-Every user-facing form should provide:
+Intel-Q should not be designed around the assumption that the customer owns a smartphone.
 
-* Input validation
-* Loading states
-* Success feedback
-* Error messages
-* Empty states
+The smartphone is an optional convenience.
 
-API Route Handlers should return appropriate HTTP status codes.
-
-Common examples:
+The core workflow must work using:
 
 ```text
-200 OK
-201 Created
-400 Bad Request
-401 Unauthorized
-403 Forbidden
-404 Not Found
-409 Conflict
-500 Internal Server Error
+Public Services Page
+        +
+Touchscreen/Kiosk
+        +
+Printer
+        +
+Paper Ticket
+        +
+Customer Display
+        +
+Staff Windows
 ```
 
-Errors should provide useful feedback without exposing sensitive implementation details.
+This makes Intel-Q suitable for real-world environments where customers may have limited access to technology or where phones are prohibited.
 
 ---
 
-# API Guidelines
+# 45. Future Extensibility
 
-API Route Handlers should:
+Although the current implementation is focused on the consular use case, the queue engine should remain sufficiently generic to support other organizations later.
 
-1. Validate authentication when required.
-2. Validate incoming data.
-3. Perform database operations on the server.
-4. Return appropriate HTTP status codes.
-5. Return consistent response structures.
-6. Handle unexpected errors gracefully.
+The system should eventually allow configuration of:
 
-Core API areas include:
+* Organization name
+* Logo
+* Theme colors
+* Services
+* Service workflows
+* Queue statuses
+* Number of windows
+* Window names/numbers
+* Staff members
+* Display configuration
+* Ticket prefixes
+* Operating hours
+
+However, these configuration capabilities should be introduced incrementally.
+
+The current MVP should prioritize a stable and professional queue workflow before introducing a full multi-tenant configuration system.
+
+---
+
+# 46. Current Implementation Priority
+
+Development should proceed in this order:
 
 ```text
-/api/auth
-/api/queues
-/api/branches
-/api/users
+1. Authentication
+        ↓
+2. Public Services
+        ↓
+3. Customer first-name ticket creation
+        ↓
+4. Ticket numbering
+        ↓
+5. Staff queue management
+        ↓
+6. Ticket calling
+        ↓
+7. Customer display
+        ↓
+8. Audio announcements
+        ↓
+9. Status transitions
+        ↓
+10. Ticket history/timing
+        ↓
+11. Completion/archive
+        ↓
+12. Analytics
+        ↓
+13. Administrative configuration
 ```
 
-Refer to the project specification for the complete API design.
+The immediate goal is not to build every possible feature.
 
----
-
-# Testing
-
-Before opening a Pull Request:
-
-* [ ] Verify the application builds successfully.
-* [ ] Run the linter.
-* [ ] Test the feature manually.
-* [ ] Confirm no console errors.
-* [ ] Verify responsive behavior.
-* [ ] Test authentication if applicable.
-* [ ] Test database operations if applicable.
-* [ ] Test error and empty states.
-
-Run:
-
-```bash
-npm run lint
-```
-
-Run the production build:
-
-```bash
-npm run build
-```
-
-Critical workflows should receive automated tests whenever practical.
-
-High-priority flows include:
-
-* User registration
-* User authentication
-* Queue creation
-* Queue retrieval
-* Queue status updates
-* Queue deletion
-* Branch management
-
----
-
-# GitHub Project Workflow
-
-Move issues through the following workflow:
-
-```text
-Backlog
-   ↓
-Ready
-   ↓
-In Progress
-   ↓
-In Review
-   ↓
-Done
-```
-
-Keep GitHub issue status updated as work progresses.
-
-Each issue should have:
-
-* Clear description
-* Acceptance criteria
-* Priority
-* Assigned owner
-* Appropriate labels
-* Related milestone when applicable
-
----
-
-# Branch Protection
-
-Do not commit directly to `main`.
-
-Always:
-
-1. Create a feature branch.
-2. Implement the assigned issue.
-3. Test your changes.
-4. Push your branch.
-5. Open a Pull Request.
-6. Request a teammate review.
-7. Address review feedback.
-8. Merge after approval.
-
----
-
-# Definition of Done
-
-A task is considered complete when:
-
-* [ ] Acceptance criteria are met.
-* [ ] Code follows project standards.
-* [ ] Feature has been tested.
-* [ ] Error and loading states are handled.
-* [ ] Responsive behavior has been verified.
-* [ ] Documentation is updated if applicable.
-* [ ] Pull Request has been reviewed.
-* [ ] Pull Request has been approved and merged.
-* [ ] Related GitHub issue is closed.
-* [ ] GitHub Project Board is updated.
-
----
-
-# Common Commands
-
-## Install Dependencies
-
-```bash
-npm install
-```
-
----
-
-## Run Development Server
-
-```bash
-npm run dev
-```
-
----
-
-## Run Linter
-
-```bash
-npm run lint
-```
-
----
-
-## Create Production Build
-
-```bash
-npm run build
-```
-
----
-
-## Start Production Server
-
-```bash
-npm run start
-```
-
----
-
-## Run Prisma Migration
-
-```bash
-npx prisma migrate dev
-```
-
----
-
-## Create a Named Prisma Migration
-
-```bash
-npx prisma migrate dev --name migration_name
-```
-
----
-
-## Generate Prisma Client
-
-```bash
-npx prisma generate
-```
-
----
-
-## Open Prisma Studio
-
-```bash
-npx prisma studio
-```
-
----
-
-# Troubleshooting
-
-## PostgreSQL Connection Errors
-
-Check:
-
-* `DATABASE_URL` exists in `.env.local`.
-* Database credentials are correct.
-* PostgreSQL database is running.
-* Your IP address is allowed if using a hosted database.
-* The database provider is available.
-
----
-
-## Prisma Errors
-
-Try:
-
-```bash
-npx prisma generate
-```
-
-If the database schema has changed:
-
-```bash
-npx prisma migrate dev
-```
-
-Check the Prisma schema:
-
-```text
-prisma/schema.prisma
-```
-
----
-
-## Authentication Issues
-
-Check:
-
-* `AUTH_SECRET` is configured.
-* Auth.js configuration is correct.
-* Database access is working.
-* Callback and redirect behavior is correct.
-* Protected routes correctly check the user's session.
-
----
-
-## Build Errors
-
-Run:
-
-```bash
-npm run lint
-```
-
-Then:
-
-```bash
-npm run build
-```
-
-Resolve all TypeScript and ESLint errors before opening a Pull Request.
-
-If environment variables were changed, restart the development server:
-
-```bash
-npm run dev
-```
-
----
-
-# Team Communication
-
-Team members should:
-
-* Keep GitHub issues updated.
-* Communicate blockers early.
-* Review teammates' Pull Requests promptly.
-* Ask questions when requirements are unclear.
-* Document significant architectural decisions.
-* Keep the GitHub Project Board current.
-* Communicate changes that affect authentication, database models, APIs, or shared components.
-
-Architectural decisions should be documented in the `docs/` directory.
-
----
-
-# Additional Documentation
-
-Refer to the following project documents:
-
-* `README.md`
-* `specs/intel-q-spec.md`
-* `docs/architecture.md`
-* `docs/deployment-guide.md`
-* `docs/developer-guide.md`
-* `docs/database-design.md`
-* `docs/ui-theme--and-branding.md`
-* `docs/milestones/`
-
-These documents provide the project's technical standards, architecture, database design, visual design, and implementation roadmap.
-
----
-
-# Final Notes
-
-Intel-Q is being developed as a collaborative, production-style application.
-
-The team should prioritize:
-
-* Simplicity
-* Reliability
-* Security
-* Accessibility
-* Maintainability
-* Consistent user experience
-
-With a limited development timeline, the team should focus on completing the MVP before implementing optional enhancements.
-
-All team members are responsible for maintaining code quality, communicating blockers, participating in code reviews, and keeping project documentation current.
-
-The goal is to deliver a stable and functional Intel-Q MVP that demonstrates effective full-stack development and professional team collaboration.
+The immediate goal is to build a **reliable end-to-end queue lifecycle** that can be demonstrated and used operationally.
