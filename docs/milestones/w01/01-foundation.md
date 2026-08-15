@@ -37,3 +37,17 @@ Prepare the existing Intel-Q template for the new queue-management workflow with
 - Updated project structure.
 - Working database connection.
 - Baseline build with known issues resolved or documented.
+
+
+# Milestone 01 implementation order
+
+1. Baseline the existing project
+2. Verify environment and PostgreSQL
+3. Verify Prisma
+4. Run TypeScript/build checks
+5. Review authentication
+6. Review branch functionality
+7. Clean obsolete customer-account assumptions
+8. Establish the new folder structure
+9. Standardize API/validation conventions
+10. Run a final build and document the baseline
