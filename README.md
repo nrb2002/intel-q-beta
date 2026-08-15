@@ -1,0 +1,717 @@
+# Intel-Q
+
+Intel-Q is a full-stack queue management system designed to help organizations manage customer queues and service locations digitally. Customers can create accounts, securely sign in, manage their profiles, and interact with queue services, while staff and administrators can manage queue operations and branches.
+
+## Team Members
+
+1. Maisela Manhla Madise 
+2. Elohim Baron Tshibasu 
+3. Nompilo Ngwenya 
+4. Sunday Victor Okormi 
+5. Derick Shanana 
+
+
+## Project Links
+
+- **GitHub Repository:** `https://github.com/nrb2002/intel-q`
+- **Rendered Application:** `https://intel-q.vercel.app/`
+
+## Problem the Application Solves
+
+Traditional customer queues can require people to remain physically in line, provide limited visibility into wait times, and make customer-flow management difficult for organizations.
+
+Intel-Q provides a centralized digital queue-management solution. Customers can register and securely access the application, while organizations can manage queue tickets and service locations.
+
+### Intended Users
+
+- **Customers** — create accounts, sign in, manage profiles, and participate in queues.
+- **Staff** — manage day-to-day queue operations.
+- **Administrators** — manage branches/service locations and administrative functionality.
+
+## Main Features
+
+- User registration
+- Secure credential-based authentication
+- Auth.js v5 authentication
+- JWT sessions
+- Protected dashboard routes
+- PostgreSQL database
+- Prisma ORM
+- bcrypt password hashing
+- Customer profile management
+- Profile editing
+- Password changes
+- Queue ticket management
+- Branch/service-location management
+- Role-based accounts
+- REST API routes
+- Responsive interface
+
+## Technology Stack
+
+| Technology    | Purpose                               |
+|---------------|---------------------------------------|
+| Next.js       | Full-stack React framework            |
+| React         | User interface                        |
+| TypeScript    | Type safety                           |
+| Tailwind CSS  | Styling                               |
+| PostgreSQL    | Primary database                      |
+| Prisma ORM    | Database access and schema management |
+| Auth.js v5    | Authentication and sessions           |
+| bcrypt        | Password hashing                      |
+| Vercel        | Production deployment                 |
+
+# Getting Started
+
+## Prerequisites
+
+- Node.js 20+
+- npm
+- PostgreSQL
+- Git
+
+Verify Node and npm:
+
+```bash
+node -v
+npm -v
+```
+
+## Clone the Repository
+
+```bash
+git clone YOUR_GITHUB_REPOSITORY_URL
+cd intel-q
+```
+
+## Install Dependencies
+
+```bash
+npm install
+```
+
+## Environment Variables
+
+Create `.env.local` in the project root:
+
+```env
+DATABASE_URL="postgresql://USERNAME:PASSWORD@HOST:5432/DATABASE_NAME"
+AUTH_SECRET="YOUR_AUTH_SECRET"
+```
+
+Generate an Auth.js secret:
+
+```bash
+npx auth secret
+```
+
+Never commit `.env.local` or authentication secrets to GitHub.
+
+# Database Setup
+
+Intel-Q uses PostgreSQL with Prisma ORM.
+
+Generate the Prisma client:
+
+```bash
+npx prisma generate
+```
+
+Create and apply development migrations:
+
+```bash
+npx prisma migrate dev
+```
+
+To synchronize the schema directly:
+
+```bash
+npx prisma db push
+```
+
+Primary models:
+
+- `User`
+- `Branch`
+- `QueueTicket`
+
+Relationships:
+
+```text
+User
+ └── QueueTicket[]
+
+Branch
+ └── QueueTicket[]
+
+QueueTicket
+ ├── customer → User
+ └── branch   → Branch
+```
+
+# Running the Application
+
+Start the development server:
+
+```bash
+npm run dev
+```
+
+Open:
+
+```text
+http://localhost:3000
+```
+
+# Authentication
+
+Intel-Q uses **Auth.js v5** with the Credentials provider.
+
+Authentication flow:
+
+```text
+Registration
+    ↓
+PostgreSQL
+    ↓
+bcrypt password hash
+    ↓
+Login
+    ↓
+Auth.js Credentials Provider
+    ↓
+JWT session
+    ↓
+Protected Dashboard
+```
+
+Passwords are hashed with bcrypt before being stored in PostgreSQL.
+
+Protected dashboard routes are handled through `proxy.ts`.
+
+# Access Instructions
+
+## Demo Account
+
+```text
+Email: admin@intel-q.com
+Password: AdminTest123
+Role: CUSTOMER
+```
+
+> Replace `admin@intel-q.com` with the actual demo account email before submission.
+
+## Testing
+
+1. Open the deployed Intel-Q application.
+2. Register a new account or use the demo account.
+3. Sign in.
+4. Confirm redirection to `/dashboard`.
+5. Open the Profile page.
+6. Verify account information.
+7. Test profile editing.
+8. Test password changing.
+9. Sign out.
+10. Attempt to access `/dashboard` directly and confirm redirection to `/login`.
+
+# Product Demo
+
+Intel-Q addresses the problem of inefficient physical customer queues by providing organizations with a digital queue-management platform. Customers can securely access their accounts and participate in queue services while organizations gain a centralized system for managing customers, tickets, branches, and service locations.
+
+The primary customer flow begins with registration and secure authentication. After signing in, customers can access their protected dashboard and manage their account profile. Customers can view their account information, update their profile, and change their password. Queue functionality provides the foundation for managing customer tickets and their progress through the service process.
+
+For staff and administrators, Intel-Q provides tools for managing queue operations and organization branches. PostgreSQL and Prisma maintain structured relationships between users, queue tickets, and branches.
+
+### Suggested Demo Walkthrough
+
+1. Open the deployed application.
+2. Demonstrate registration.
+3. Create or use a demo customer account.
+4. Sign in.
+5. Demonstrate protected dashboard access.
+6. Open Profile.
+7. Demonstrate authenticated user information.
+8. Edit profile information.
+9. Change the password.
+10. Demonstrate queue functionality.
+11. Demonstrate branch management using an authorized account.
+12. Sign out and demonstrate protected-route behavior.
+
+# API Documentation
+
+## User APIs
+
+### Get Current User
+
+```http
+GET /api/users/me
+```
+
+Returns the currently authenticated user's profile.
+
+Authentication is required.
+
+Example response:
+
+```json
+{
+  "user": {
+    "id": "user-id",
+    "firstName": "John",
+    "lastName": "Smith",
+    "email": "john@example.com",
+    "role": "CUSTOMER",
+    "createdAt": "2026-08-13T00:00:00.000Z",
+    "updatedAt": "2026-08-13T00:00:00.000Z"
+  }
+}
+```
+
+### Update Current User
+
+```http
+PATCH /api/users/me
+```
+
+Updates the authenticated user's profile.
+
+Example:
+
+```json
+{
+  "firstName": "John",
+  "lastName": "Doe",
+  "email": "john.doe@example.com"
+}
+```
+
+### Change Password
+
+```http
+PATCH /api/users/me/password
+```
+
+Changes the authenticated user's password.
+
+Example:
+
+```json
+{
+  "currentPassword": "CurrentPassword123",
+  "newPassword": "NewPassword123",
+  "confirmPassword": "NewPassword123"
+}
+```
+
+The API verifies the current password with bcrypt before storing the new password.
+
+## Queue APIs
+
+### Get Queue Tickets
+
+```http
+GET /api/queue
+```
+
+Returns queue ticket information.
+
+### Create Queue Ticket
+
+```http
+POST /api/queue
+```
+
+Example:
+
+```json
+{
+  "branchId": "branch-id",
+  "serviceType": "General Service"
+}
+```
+
+### Update Queue Ticket
+
+```http
+PATCH /api/queue
+```
+
+Updates queue ticket information such as status.
+
+Possible statuses:
+
+```text
+WAITING
+IN_SERVICE
+COMPLETED
+CANCELLED
+```
+
+> Update request/response examples if the final implementation uses different fields.
+
+## Branch APIs
+
+### Get Branches
+
+```http
+GET /api/branches
+```
+
+Returns organization branches/service locations.
+
+### Create Branch
+
+```http
+POST /api/branches
+```
+
+Example:
+
+```json
+{
+  "name": "Main Branch",
+  "address": "123 Main Street",
+  "city": "Provo"
+}
+```
+
+### Update Branch
+
+```http
+PATCH /api/branches
+```
+
+Updates branch information.
+
+### Delete Branch
+
+```http
+DELETE /api/branches
+```
+
+Deletes a branch when permitted by the application's authorization rules.
+
+> Update these examples if the final branch implementation uses dynamic routes such as `/api/branches/[id]`.
+
+# Database Schema
+
+## User
+
+Stores customer, staff, and administrator accounts.
+
+Important fields:
+
+- `id`
+- `firstName`
+- `lastName`
+- `email`
+- `password`
+- `role`
+- `createdAt`
+- `updatedAt`
+
+Roles:
+
+```text
+CUSTOMER
+STAFF
+ADMIN
+```
+
+## Branch
+
+Represents an organization service location.
+
+Important fields:
+
+- `id`
+- `name`
+- `address`
+- `city`
+- `createdAt`
+- `updatedAt`
+
+## QueueTicket
+
+Represents a customer's queue position.
+
+Important fields:
+
+- `id`
+- `ticketNumber`
+- `customerId`
+- `branchId`
+- `serviceType`
+- `status`
+- `createdAt`
+- `calledAt`
+- `completedAt`
+
+# Deployment
+
+Intel-Q is designed for deployment on Vercel.
+
+## 1. Push to GitHub
+
+```bash
+git add .
+git commit -m "Prepare Intel-Q for deployment"
+git push origin main
+```
+
+## 2. Create a Vercel Project
+
+Connect the team's GitHub repository to Vercel and create a new project.
+
+## 3. Configure Production Environment Variables
+
+Add:
+
+```env
+DATABASE_URL="YOUR_PRODUCTION_POSTGRESQL_URL"
+AUTH_SECRET="YOUR_PRODUCTION_AUTH_SECRET"
+```
+
+Do not expose production secrets in source code.
+
+## 4. Deploy
+
+Vercel will build and deploy the Next.js application.
+
+Verify after deployment:
+
+- Registration
+- Login
+- Logout
+- Protected dashboard routes
+- Profile loading
+- Profile updates
+- Password changes
+- Queue operations
+- Branch management
+
+## Production URL
+
+```text
+[ADD VERCEL DEPLOYMENT URL]
+```
+
+# Known Issues
+
+- Queue functionality should be tested with multiple concurrent users.
+- Production authentication and database configuration should be verified after deployment.
+- Administrative permissions require comprehensive role-based testing.
+- Additional automated tests would improve reliability.
+- Real-time queue updates are not yet implemented.
+- Queue wait-time estimates can be expanded in future versions.
+
+# Future Opportunities
+
+- Real-time queue updates
+- Estimated wait times
+- SMS notifications
+- Email notifications
+- Appointment scheduling
+- Advanced queue analytics
+- Administrative reporting dashboards
+- More granular role and permission management
+- Multi-organization support
+- Accessibility improvements
+- Automated unit, integration, and end-to-end testing
+- Mobile application support
+
+# Project Structure
+
+The project should follow a structure similar to:
+
+```text
+intel-q/
+│
+├── .github/
+│   ├── workflows/
+│   │   └── ...
+│   └── ...
+│
+├── .specify/
+│   └── ...
+│
+├── app/
+│   │
+│   ├── api/
+│   │   ├── auth/
+│   │   │   └── [...nextauth]/
+│   │   │       └── route.ts
+│   │   │
+│   │   ├── queues/
+│   │   │   ├── route.ts
+│   │   │   └── [id]/
+│   │   │       └── route.ts
+│   │   │
+│   │   ├── branches/
+│   │   │   ├── route.ts
+│   │   │   └── [id]/
+│   │   │       └── route.ts
+│   │   │
+│   │   └── users/
+│   │       └── me/
+│   │           └── route.ts
+│   │
+│   ├── dashboard/
+│   │   ├── layout.tsx
+│   │   ├── page.tsx
+│   │   │
+│   │   ├── queue/
+│   │   │   └── page.tsx
+│   │   │
+│   │   ├── branches/
+│   │   │   └── page.tsx
+│   │   │
+│   │   └── profile/
+│   │       └── page.tsx
+│   │
+│   ├── login/
+│   │   └── page.tsx
+│   │
+│   ├── register/
+│   │   └── page.tsx
+│   │
+│   ├── globals.css
+│   ├── layout.tsx
+│   └── page.tsx
+│
+├── components/
+│   │
+│   ├── layout/
+│   │   ├── Header.tsx
+│   │   ├── Sidebar.tsx
+│   │   ├── Footer.tsx
+│   │   └── Navigation.tsx
+│   │
+│   ├── auth/
+│   │   ├── LoginForm.tsx
+│   │   ├── RegisterForm.tsx
+│   │   └── LogoutButton.tsx
+│   │
+│   ├── queue/
+│   │   ├── QueueList.tsx
+│   │   ├── QueueTicketCard.tsx
+│   │   ├── QueueForm.tsx
+│   │   └── QueueStatusBadge.tsx
+│   │
+│   ├── branch/
+│   │   ├── BranchList.tsx
+│   │   ├── BranchCard.tsx
+│   │   └── BranchForm.tsx
+│   │
+│   ├── ui/
+│   │   ├── Button.tsx
+│   │   ├── Input.tsx
+│   │   ├── Card.tsx
+│   │   ├── Badge.tsx
+│   │   ├── Dialog.tsx
+│   │   ├── LoadingSpinner.tsx
+│   │   └── Toast.tsx
+│   │
+│   └── shared/
+│       ├── EmptyState.tsx
+│       ├── ErrorMessage.tsx
+│       └── LoadingState.tsx
+│
+├── lib/
+│   ├── db.ts
+│   ├── auth.ts
+│   └── utils.ts
+│
+├── models/
+│   ├── User.ts
+│   ├── QueueTicket.ts
+│   └── Branch.ts
+│
+├── services/
+│   ├── queueService.ts
+│   ├── branchService.ts
+│   └── userService.ts
+│
+├── hooks/
+│   └── ...
+│
+├── types/
+│   ├── auth.ts
+│   ├── queue.ts
+│   ├── branch.ts
+│   └── user.ts
+│
+├── utils/
+│   └── ...
+│
+├── public/
+│   └── ...
+│
+├── docs/
+│   ├── architecture.md
+│   ├── api-documentation.md
+│   ├── constitution.md
+│   ├── database-design.md
+│   ├── design-theme-branding.md
+│   ├── developer-guide.md
+│   ├── deployment-guide.md
+│   └── week-04-milestone.md
+│
+├── specs/
+│   └── ...
+│
+├── templates/
+│   └── ...
+│
+├── .env.example
+├── .env.local
+├── .gitignore
+├── .prettierrc
+├── AGENTS.md
+├── CLAUDE.md
+├── README.md
+├── board.md
+├── eslint.config.mjs
+├── next.config.ts
+├── package.json
+├── package-lock.json
+├── postcss.config.mjs
+├── spec-kit.yaml
+└── tsconfig.json
+```
+
+# Security Notes
+
+- Passwords are hashed with bcrypt.
+- Authentication is handled by Auth.js v5.
+- Protected routes require an authenticated session.
+- User profile APIs operate on the authenticated user's session ID.
+- Database credentials are stored in environment variables.
+- Authentication secrets must not be committed to source control.
+- Production secrets should be configured through Vercel.
+
+# README Verification
+
+This README documents:
+
+- Project description
+- Intended users
+- Team members
+- Technology stack
+- Local setup instructions
+- Environment variables
+- Database setup
+- Authentication
+- Product demo
+- Access instructions
+- API routes
+- Deployment instructions
+- Known issues
+- Future opportunities
+
+Before final submission, replace all placeholder team members, repository URLs, deployment URLs, and demo email information with the actual project details.
+
+# Course Information
+
+**Course:** WDD 430 – Web Full-Stack Development  
+**Project:** Intel-Q Queue Management System

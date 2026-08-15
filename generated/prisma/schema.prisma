@@ -1,0 +1,83 @@
+// Prisma schema file.
+// Learn more about it at:
+// https://pris.ly/d/prisma-schema
+//
+// Intel-Q Queue Management System
+// Database: PostgreSQL
+// ORM: Prisma
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  CUSTOMER @map("customer")
+  STAFF    @map("staff")
+  ADMIN    @map("admin")
+}
+
+enum QueueStatus {
+  WAITING    @map("Waiting")
+  IN_SERVICE @map("In Service")
+  COMPLETED  @map("Completed")
+  CANCELLED  @map("Cancelled")
+}
+
+model User {
+  id        String   @id @default(uuid()) @db.Uuid
+  firstName String   @map("first_name")
+  lastName  String   @map("last_name")
+  email     String   @unique
+  password  String
+  role      UserRole @default(CUSTOMER)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  queueTickets QueueTicket[]
+
+  @@map("users")
+}
+
+model Branch {
+  id      String @id @default(uuid()) @db.Uuid
+  name    String
+  address String
+  city    String
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  queueTickets QueueTicket[]
+
+  @@index([name])
+  @@map("branches")
+}
+
+model QueueTicket {
+  id           String      @id @default(uuid()) @db.Uuid
+  ticketNumber Int         @map("ticket_number")
+  customerId   String      @map("customer_id") @db.Uuid
+  branchId     String      @map("branch_id") @db.Uuid
+  serviceType  String      @map("service_type")
+  status       QueueStatus @default(WAITING)
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+  calledAt    DateTime? @map("called_at")
+  completedAt DateTime? @map("completed_at")
+
+  customer User   @relation(fields: [customerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([branchId, ticketNumber])
+  @@index([customerId])
+  @@index([branchId])
+  @@index([status])
+  @@index([branchId, status])
+  @@map("queue_tickets")
+}
