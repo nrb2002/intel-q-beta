@@ -1,22 +1,45 @@
 # Intel-Q Developer's Guide
 
-## Consular Queue Management MVP
+## 1. Project Overview
 
-### 1. Project Overview
+Intel-Q is a cloud-ready, full-stack digital queue-management application built with Next.js, TypeScript, Prisma, and PostgreSQL.
 
-Intel-Q is a cloud-based queue management application designed to digitize customer flow for organizations that operate multiple service queues and service windows.
+The initial implementation targets a **consular-section environment**, where customers can obtain queue tickets without creating accounts, while staff and administrators authenticate to manage services, queues, windows, and ticket workflows.
 
-For the current MVP, Intel-Q is adapted to the operational reality of a **consular section**.
-
-The system allows customers to obtain queue tickets without creating accounts while allowing authorized staff to manage queues, call tickets, move tickets between service stages, and complete tickets.
-
-The application must remain simple, professional, reliable, and suitable for deployment in a real operational environment.
+The architecture must remain **generic and configurable**. The consular use case is the initial configuration, not a hardcoded limitation of the application.
 
 ---
 
-# 2. Current Consular Use Case
+## 2. Core Objectives
 
-The consular section provides services such as:
+Intel-Q must provide:
+
+* Public customer access without account creation.
+* First-name collection before issuing a ticket.
+* Digital and printable tickets.
+* Staff authentication.
+* Administrator authentication.
+* Configurable services.
+* Configurable queue stages.
+* Configurable service availability.
+* Staff window management.
+* Ticket calling.
+* Ticket transfers between queue stages.
+* Tickets that can move forward or backward in a workflow.
+* Customer-facing queue displays.
+* Audible ticket announcements.
+* Ticket waiting-time tracking.
+* Stage-level timing.
+* Total processing-time tracking.
+* Historical ticket data for analysis.
+* Secure role-based API access.
+* A clean, responsive, professional interface.
+
+---
+
+# 3. Initial Business Context
+
+The first deployment scenario is a consular section offering:
 
 * Citizen Services
 * Immigrant Visas
@@ -24,888 +47,747 @@ The consular section provides services such as:
 * Notarials
 * Official/Diplomatic Visas
 
-A service may contain multiple operational queues or stages.
-
-For example:
-
-**Immigrant Visa Services**
-
-* Intake
-* Interview
-* Payment
-* Delivery
-* On Hold
-
-These stages are represented through the ticket's status.
-
-A ticket may move between statuses in either direction when operational circumstances require it.
-
-Example:
+For example, Immigrant Visa Services may contain:
 
 ```text
-INTAKE
-   ↓
-INTERVIEW
-   ↓
-PAYMENT
-   ↓
-DELIVERY
+Immigrant Visas
+    ├── Intake
+    ├── Interview
+    ├── Payment
+    ├── Delivery
+    └── On Hold
 ```
 
-But a ticket may also move backward or be placed on hold:
+These values must be configurable.
+
+The application must not contain business logic such as:
 
 ```text
-INTAKE
-   ↓
-INTERVIEW
-   ↓
-ON_HOLD
-   ↓
-INTERVIEW
+if service === "Immigrant Visa"
 ```
 
-The system must therefore not assume that queue progression is always linear.
+Instead, services and stages should come from the database.
 
 ---
 
-# 3. Core Design Principles
+# 4. User Types
 
-Intel-Q should follow these principles:
+## 4.1 Customers
 
-### Simple
+Customers do not create accounts and do not authenticate.
 
-Customers should be able to obtain a ticket with minimal interaction.
+A customer:
 
-### No customer accounts
+1. Opens the Customer Welcome Page.
+2. Opens the Services Page.
+3. Selects a service.
+4. Provides at least their first name.
+5. Receives a ticket.
+6. Prints or downloads the ticket.
+7. Waits for the ticket to be called.
+8. Follows the ticket through subsequent service stages.
 
-Customers must **not** be required to register or log in to obtain a ticket.
+The first name exists primarily to help identify the applicant operationally. Tickets should not expose unnecessary personal information.
 
-### Lightweight identification
+Customers may access Intel-Q using:
 
-Before receiving a ticket, the customer must provide at least their **first name**.
+* Their own phone.
+* A friend's phone.
+* An installed iPad/touchscreen.
+* A computer or kiosk.
 
-The first name is associated with the queue ticket and printed on the ticket.
-
-It is not a customer account and must not be treated as strong authentication.
-
-### Operational privacy
-
-Customer names must not be displayed publicly on the customer-facing queue display.
-
-The public display should primarily show:
-
-* Ticket number
-* Service
-* Window
-* Queue/status information where appropriate
-
-### Server-generated tickets
-
-Customers must never choose or submit their own ticket number.
-
-The server generates the ticket number.
-
-### Flexible workflow
-
-Tickets can move between statuses in either direction.
-
-### Auditable timing
-
-The system records how long a ticket spends in each status and the total processing time.
-
-### Staff-driven operations
-
-Staff members control queue progression from the staff interface.
+The system must therefore never depend on the customer owning a smartphone.
 
 ---
 
-# 4. User Roles
+## 4.2 Staff
 
-The MVP has three conceptual roles.
-
-## Customer
-
-Customers do not authenticate.
-
-They can:
-
-* Access the public Services page
-* View currently available services
-* Select a service
-* Enter their first name
-* Generate a ticket
-* Print a ticket
-* Download a ticket when using a personal device
-
-Customers cannot:
-
-* Modify tickets
-* Change ticket status
-* Call tickets
-* Access staff functionality
-* Access administrative functionality
-
----
-
-## Staff
-
-Staff members authenticate through the staff login route.
+Staff members authenticate through the Staff login route.
 
 Staff can:
 
-* View available services
-* View pending tickets
-* View tickets assigned to their current queue/window
-* Call the next ticket
-* Recall a ticket where appropriate
-* Move tickets to another status
-* Place tickets on hold
-* Return tickets from hold
-* Complete/destroy tickets after final service
-* View relevant ticket information
+* Select a service.
+* Select a queue stage.
+* Select or use a service window.
+* View pending tickets.
+* Call the next ticket.
+* Recall a ticket.
+* Start serving a ticket.
+* Put a ticket on hold.
+* Resume a ticket.
+* Move a ticket to another queue stage.
+* Complete a ticket when appropriate.
 
-Staff should not be responsible for changing global application configuration.
-
----
-
-## Administrator
-
-Administrators authenticate through the administrator login route.
-
-Administrators can manage system configuration and operational settings.
-
-Depending on the final MVP scope, this may include:
-
-* Services
-* Queue/status configuration
-* Windows
-* Staff accounts
-* Branch/location information
-* Organization settings
-* Application configuration
-* Operational reports
+Staff should only be allowed to perform actions permitted by their role.
 
 ---
 
-# 5. Authentication Routes
+## 4.3 Administrators
 
-The application must provide separate authentication entry points for staff and administrators.
+Administrators authenticate through the Admin login route.
 
-Conceptually:
+Administrators can manage:
+
+* Services.
+* Queue stages.
+* Service availability.
+* Windows.
+* Staff accounts/roles where implemented.
+* System configuration.
+* Historical and analytical information.
+
+Administrative functionality must remain separate from normal staff operations.
+
+---
+
+# 5. Application Architecture
+
+The application follows a Next.js full-stack architecture.
 
 ```text
-/staff/login
-/admin/login
+Browser
+   │
+   ├── Customer Interface
+   │
+   ├── Staff Interface
+   │
+   └── Admin Interface
+          │
+          ▼
+     Next.js Application
+          │
+     ┌────┴────┐
+     │         │
+   Pages      API Routes
+     │         │
+     └────┬────┘
+          ▼
+       Prisma
+          │
+          ▼
+      PostgreSQL
 ```
 
-Customers do not have an authentication route.
+The existing Intel-Q project should be reused wherever practical.
 
-The public customer interface must remain accessible without authentication.
-
-Authorization must be enforced server-side.
-
-Hiding UI elements is not sufficient security.
+Do not rewrite working authentication, Prisma configuration, validation utilities, or reusable UI components without a clear reason.
 
 ---
 
-# 6. Customer Journey
+# 6. Technology Stack
 
-The customer journey is intentionally short.
+The project currently uses:
+
+* Next.js
+* React
+* TypeScript
+* Tailwind CSS
+* PostgreSQL
+* Prisma ORM
+* Zod
+* bcrypt
+* Existing authentication infrastructure
+
+The exact versions should be determined from the project's `package.json` and should not be unnecessarily upgraded during feature development.
+
+---
+
+# 7. Application Route Structure
+
+The implementation should be organized around three major areas.
+
+## Public Customer Routes
 
 ```text
-Customer Welcome Page
-        ↓
-Services Page
-        ↓
-Select Service
-        ↓
-Enter First Name
-        ↓
-Generate Ticket
-        ↓
-Print / Download Ticket
-        ↓
-Wait for Call
+/
 ```
 
----
+Customer welcome page.
 
-# 7. Customer Welcome Page
+```text
+/services
+```
 
-The welcome page is the primary entry point for customers.
+Public service-selection and ticket-issuing page.
 
-It should clearly provide access to the Services page.
+```text
+/display
+```
 
-The page should include:
+Public customer queue display.
 
-* Organization/consular branding
-* Clear instructions
-* Services access button/link
-* QR code leading to the Services page
-
-The QR code is particularly useful for customers who can use a smartphone.
-
-Customers who cannot use a smartphone can use the touch-screen device provided in the waiting area.
+These routes do not require authentication.
 
 ---
 
-# 8. Services Page
+## Staff Routes
 
-The Services page is public.
+```text
+/login/staff
+```
 
-No authentication is required.
+Staff authentication.
 
-It displays services that are currently available.
+```text
+/staff
+```
 
-For example:
+Staff dashboard.
+
+Additional staff pages may be added as required.
+
+---
+
+## Admin Routes
+
+```text
+/login/admin
+```
+
+Administrator authentication.
+
+```text
+/admin
+```
+
+Administrator dashboard.
+
+Additional administration pages may include:
+
+```text
+/admin/services
+/admin/queues
+/admin/windows
+/admin/staff
+/admin/reports
+```
+
+Routes should only be added when required by the corresponding milestone.
+
+---
+
+# 8. Customer Welcome Page
+
+The Customer Welcome Page is the primary public entry point.
+
+It must clearly communicate how a customer starts the queue process.
+
+The page should provide:
+
+* Organization name.
+* Organization logo.
+* Short instructions.
+* Link to the Services Page.
+* QR code linking to the Services Page.
+* Clear indication that no account is required.
+
+Example:
+
+```text
+Welcome to Intel-Q
+
+To receive a service ticket:
+
+1. Scan the QR code.
+2. Select your service.
+3. Enter your first name.
+4. Print or download your ticket.
+
+[ QR CODE ]
+
+Visit:
+intel-q.example/services
+```
+
+The interface must work well on:
+
+* Mobile phones.
+* Tablets.
+* Touchscreen kiosks.
+* Desktop displays.
+
+---
+
+# 9. Customer Ticket Process
+
+The customer process is:
 
 ```text
 Welcome
-
-Please select the service you require.
-
-[ Citizen Services ]
-
-[ Immigrant Visas ]
-
-[ Non-immigrant Visas ]
-
-[ Notarials ]
-
-[ Official / Diplomatic Visas ]
+   ↓
+Services
+   ↓
+Select Service
+   ↓
+Enter First Name
+   ↓
+Generate Ticket
+   ↓
+Print / Download
+   ↓
+Wait
 ```
 
-Services that have not been opened by staff must not be available for ticket creation.
+No customer account is required.
+
+## First Name Requirement
+
+A customer must provide at least a first name.
+
+Validation should reject:
+
+* Empty values.
+* Whitespace-only values.
+* Values exceeding the configured maximum length.
+
+The first name should be validated both client-side and server-side.
 
 ---
 
-# 9. Opening Services
+# 10. Ticket Design
 
-Every morning, authorized staff or administrators can open the required services.
-
-Conceptually:
-
-```text
-Service
-       ↓
-OPEN
-       ↓
-Visible to customers
-```
-
-A closed service should not appear as an available ticket option.
-
-This allows the system to adapt to daily operational conditions.
-
-For example, if the consular section is only processing:
-
-* Citizen Services
-* Immigrant Visas
-
-those are the services presented to customers.
-
----
-
-# 10. Customer Identification
-
-Before generating a ticket, the customer must provide a first name.
+A ticket should contain only the information necessary for queue operation.
 
 Example:
 
 ```text
-Immigrant Visa Services
+INTEL-Q
 
-Please enter your first name:
+Immigrant Visas
+Intake
 
-[ Jean                 ]
-
-[ Get Ticket ]
-```
-
-The first name should be validated before ticket creation.
-
-At minimum:
-
-* Required
-* Trimmed
-* Reasonable maximum length
-* No empty/whitespace-only values
-
-The customer does not provide:
-
-* Password
-* Email
-* Phone number
-* Username
-* Account credentials
-
----
-
-# 11. Ticket Generation
-
-Ticket numbers are generated by the server.
-
-The customer must never be able to select a ticket number.
-
-Example:
-
-```text
-Customer:
-
-First name: Jean
-Service: Immigrant Visa
-
-        ↓
-
-Server
-
-        ↓
-
-Ticket: IV-042
-```
-
-Ticket generation must be atomic to avoid duplicate ticket numbers.
-
----
-
-# 12. Ticket Contents
-
-A printed ticket should contain enough information for operational identification.
-
-Example:
-
-```text
---------------------------------
-          INTEL-Q
-
-    Immigrant Visa Services
-
-Ticket: IV-042
-Name: Jean
-
-Issued: 09:42
-
-Please wait for your ticket
-to be called.
---------------------------------
-```
-
-The ticket may also contain:
-
-* Organization name
-* Service name
-* Date
-* Ticket number
-* First name
-* Issue time
-* Instructions
-
-If generated from a customer's phone, the ticket should provide an option to download or print it.
-
----
-
-# 13. Customer Privacy
-
-The customer's first name is operational information and should not be unnecessarily exposed.
-
-The public customer display should not show:
-
-```text
-Jean — IV-042
-```
-
-Instead, it should display:
-
-```text
-NOW SERVING
-
+Ticket
 IV-042
 
-WINDOW 3
+Applicant
+John
+
+Date
+15 August 2026
 ```
 
-The first name should primarily be available to authorized staff and printed on the customer's ticket.
+The ticket should not expose:
 
-The first name is an operational identifier, not a formal identity-verification mechanism.
+* Passwords.
+* Email addresses.
+* Internal database IDs.
+* Authentication information.
+* Unnecessary personal information.
 
-Where consular procedures require identity verification, staff must continue to perform the required document or identity checks.
+Tickets should support:
+
+* Browser printing.
+* Mobile-friendly display.
+* Download where appropriate.
+
+---
+
+# 11. Ticket Number Generation
+
+Ticket numbers should be human-readable.
+
+Examples:
+
+```text
+IV-042
+CS-018
+NV-031
+NOT-007
+DV-012
+```
+
+The prefix should be derived from service configuration rather than hardcoded into the application.
+
+Ticket numbers must avoid accidental duplication.
+
+Concurrency must be considered when multiple customers request tickets simultaneously.
+
+---
+
+# 12. Services
+
+A Service represents a customer-facing service offered by the organization.
+
+The initial services are:
+
+```text
+Citizen Services
+Immigrant Visas
+Non-immigrant Visas
+Notarials
+Official/Diplomatic Visas
+```
+
+Services must be database-driven.
+
+A service should support concepts such as:
+
+* Name.
+* Description where required.
+* Public availability.
+* Display ordering.
+* Ticket prefix where applicable.
+* Active/inactive state.
+
+The customer interface must only display services that are currently available.
+
+---
+
+# 13. Queue Stages
+
+A service may contain multiple queue stages.
+
+Example:
+
+```text
+Immigrant Visas
+
+Intake
+Interview
+Payment
+Delivery
+On Hold
+```
+
+A queue stage represents where the ticket currently needs service.
+
+The system should not create a completely new customer ticket whenever a ticket moves to another stage.
+
+Instead:
+
+```text
+Ticket IV-042
+
+Current Stage:
+Interview
+```
+
+may later become:
+
+```text
+Current Stage:
+Payment
+```
+
+The same ticket remains associated with the customer throughout the workflow.
 
 ---
 
 # 14. Ticket Lifecycle
 
-A ticket represents a customer moving through one or more service stages.
+The ticket lifecycle consists of two related concepts:
 
-Example:
+## General Ticket Status
+
+Examples:
 
 ```text
-Ticket Created
-      ↓
-INTAKE
-      ↓
-INTERVIEW
-      ↓
-PAYMENT
-      ↓
-DELIVERY
-      ↓
+WAITING
+CALLED
+SERVING
+ON_HOLD
 COMPLETED
 ```
 
-However, the workflow must support non-linear movement.
+## Current Queue Stage
 
-Example:
+Examples:
 
 ```text
-INTERVIEW
-    ↓
-ON_HOLD
-    ↓
-INTERVIEW
+Intake
+Interview
+Payment
+Delivery
+```
+
+These concepts should not be unnecessarily combined.
+
+For example:
+
+```text
+Ticket:
+IV-042
+
+Status:
+SERVING
+
+Current Stage:
+Interview
+```
+
+This allows the system to know both:
+
+* what the ticket is currently doing;
+* where it is being processed.
+
+---
+
+# 15. Ticket Movement
+
+Tickets must be able to move between stages.
+
+Normal progression:
+
+```text
+Intake
+  ↓
+Interview
+  ↓
+Payment
+  ↓
+Delivery
+```
+
+However, the system must also support non-linear movement.
+
+For example:
+
+```text
+Interview
+  ↓
+On Hold
+  ↓
+Interview
 ```
 
 or:
 
 ```text
-PAYMENT
-    ↓
-INTERVIEW
-```
-
-if operational circumstances require the ticket to return to an earlier stage.
-
----
-
-# 15. Ticket Status
-
-The ticket status represents the customer's current operational queue.
-
-For example:
-
-```text
-WAITING
-CALLED
-IN_SERVICE
-ON_HOLD
-INTERVIEW
-PAYMENT
-DELIVERY
-COMPLETED
-```
-
-The exact status configuration should be determined by the configured service workflow.
-
-A service may have different statuses from another service.
-
-For example:
-
-```text
-Immigrant Visa
-
-INTAKE
-INTERVIEW
-PAYMENT
-DELIVERY
-ON_HOLD
-```
-
-while:
-
-```text
-Notarials
-
-INTAKE
-PROCESSING
-PAYMENT
-COMPLETED
-```
-
-The application should therefore avoid hard-coding consular-specific workflow assumptions into the core queue engine.
-
----
-
-# 16. Ticket Status Transitions
-
-A status transition must be recorded.
-
-Example:
-
-```text
-Ticket IV-042
-
-INTAKE
+Interview
   ↓
-INTERVIEW
+Intake
 ```
 
-The system records:
+if additional processing is required.
 
-* Previous status
-* New status
-* Timestamp
-* Staff member
-* Relevant window
-
-This creates an operational history for the ticket.
+The application must therefore not assume that ticket stages always move forward.
 
 ---
 
-# 17. Waiting Time
+# 16. Staff Window Workflow
 
-The system must calculate how long a ticket spends in each stage.
+Staff members operate service windows.
 
 Example:
 
 ```text
-Ticket: IV-042
+Window 03
 
-Intake:
-09:42 → 10:01
-19 minutes
+Service:
+Immigrant Visas
 
-Interview:
-10:01 → 10:35
-34 minutes
-
-Payment:
-10:35 → 10:44
-9 minutes
-
-Delivery:
-10:44 → 10:50
-6 minutes
+Queue:
+Interview
 ```
 
-Total:
+The staff interface should show:
 
 ```text
-Total processing/waiting time:
-68 minutes
-```
-
-The underlying system should retain timestamps rather than only storing the calculated duration.
-
-This allows reporting and analysis later.
-
----
-
-# 18. Ticket History
-
-Each status change should produce a history record.
-
-Conceptually:
-
-```text
-TicketHistory
-
-ticketId
-previousStatus
-newStatus
-changedAt
-staffId
-windowId
-```
-
-This allows the application to reconstruct the complete lifecycle of a ticket.
-
----
-
-# 19. Staff Workflow
-
-A staff member logs in and accesses the service/queue management interface.
-
-The interface should allow them to see relevant pending tickets.
-
-Example:
-
-```text
-IMMIGRANT VISA — INTAKE
-
-Waiting:
-
+Currently Serving
 IV-041
+
+Next Pending
 IV-042
+
+Waiting
 IV-043
-
-[ Call Next ]
+IV-044
+IV-045
 ```
 
-When the staff member calls the next ticket:
-
-```text
-IV-041
-```
-
-the ticket becomes the active ticket.
-
-The staff member's window is associated with the call.
+The staff member can call the next appropriate ticket.
 
 ---
 
-# 20. Calling a Ticket
+# 17. Ticket Calling
 
-When a ticket is called:
+When staff call a ticket:
 
-1. The ticket is selected.
-2. Its status changes appropriately.
-3. The current window is recorded.
-4. The call timestamp is recorded.
-5. The customer display updates in real time.
-6. An audible announcement is played.
+1. The ticket is atomically assigned to the window.
+2. The ticket status changes appropriately.
+3. The current queue display updates.
+4. The customer display shows the ticket.
+5. The window number is displayed.
+6. An audible announcement is generated.
 
-Example customer display:
+Example:
 
 ```text
-NOW SERVING
+IV-042
 
-IV-041
-
-WINDOW 2
+WINDOW 3
 ```
 
-Audio:
+Voice announcement:
 
-> "Ticket I-V zero four one, please proceed to window two."
+```text
+"Ticket IV-042, please proceed to Window 3."
+```
 
-The actual voice implementation should use browser/device-supported text-to-speech or another appropriate audio service.
+The exact wording may later become configurable.
 
 ---
 
-# 21. Customer Display
+# 18. Concurrent Staff Operations
+
+Multiple staff members may operate simultaneously.
+
+The system must prevent two staff members from successfully claiming the same pending ticket.
+
+Ticket claiming should therefore be treated as an atomic database operation wherever possible.
+
+Avoid implementations where the client:
+
+```text
+GET next ticket
+```
+
+and later:
+
+```text
+UPDATE ticket
+```
+
+without protecting the interval between the two operations.
+
+The backend must remain the authority for ticket assignment.
+
+---
+
+# 19. Customer Display
 
 The Customer Display is a public endpoint.
 
-It should show:
-
-* Currently called tickets
-* Window numbers
-* Relevant service information
-* Next pending tickets where appropriate
-
 Example:
 
 ```text
 NOW SERVING
 
-IV-041       WINDOW 2
-IV-038       WINDOW 4
-
-NEXT
-
 IV-042
-IV-043
+WINDOW 3
 ```
 
-The interface must automatically update when staff call tickets.
-
-No customer login is required.
-
----
-
-# 22. Real-Time Updates
-
-Queue operations are time-sensitive.
-
-The customer display should not require users to manually refresh the browser.
-
-The application should eventually use a real-time mechanism such as:
-
-* WebSockets
-* Server-Sent Events
-* Managed realtime infrastructure
-* Appropriate database/event subscriptions
-
-For the initial MVP, polling may be acceptable if necessary, but the architecture should allow migration to true realtime communication.
-
----
-
-# 23. Completing a Ticket
-
-The final service window completes the customer's journey.
-
-For example:
+It may also display multiple active calls:
 
 ```text
-DELIVERY
-   ↓
-COMPLETED
+NOW SERVING
+
+IV-042    Window 3
+CS-018    Window 1
+N-007     Window 4
 ```
 
-Once completed, the ticket should no longer appear in active queues.
+The display should show enough information for customers to identify where they need to go.
 
-The system should retain its historical information for reporting rather than physically destroying the underlying database record.
+It should not display sensitive customer information.
 
-The phrase "destroy the ticket" therefore means:
-
-> **Remove the ticket from active operational queues while retaining the historical record required for auditing and analytics.**
-
-This is important for data integrity.
+Only ticket identifiers, service information, and window information should normally be displayed.
 
 ---
 
-# 24. Staff Windows
+# 20. Voice Announcements
 
-A window represents the physical service point where a staff member serves a customer.
+The customer display should provide audible announcements when supported by the browser.
 
 Example:
 
 ```text
-Window 1
-Window 2
-Window 3
-Window 4
+Ticket IV-042,
+please proceed to Window 3.
 ```
 
-When a staff member calls a ticket, the system records the window.
+The implementation may use browser-supported speech synthesis.
 
-Example:
+The application must gracefully handle browsers or environments where speech synthesis is unavailable.
 
-```text
-Ticket: IV-042
-Status: INTERVIEW
-Window: 3
-Staff: Staff Member
-Called: 10:01
-```
-
-A staff member should be able to work from an authorized service/queue management page rather than being permanently tied to a single service.
+Visual display must remain fully functional even when audio is unavailable.
 
 ---
 
-# 25. Service and Queue Separation
+# 21. Ticket Timing
 
-The application should distinguish between:
+Timing is a major part of Intel-Q's analytical value.
 
-### Service
+The system should record timestamps for meaningful ticket events.
 
-What the customer is requesting.
-
-Example:
+Examples include:
 
 ```text
-Immigrant Visa
+createdAt
+calledAt
+serviceStartedAt
+stageStartedAt
+stageCompletedAt
+completedAt
 ```
 
-### Queue/Status
+Actual field names should follow the final Prisma schema.
 
-Where the ticket currently is in the operational workflow.
+The system should be capable of determining:
 
-Example:
+### Waiting Time
 
-```text
-Interview
-```
+Time between entering a queue stage and being called/served.
 
-Therefore:
+### Stage Processing Time
 
-```text
-Service:
-Immigrant Visa
+Time spent being processed at a particular stage.
 
-Current Queue:
-Interview
-```
+### Total Processing Time
 
-This distinction is essential.
-
-A customer should select the **service**, not an internal operational queue.
+Time between initial ticket creation and final completion.
 
 ---
 
-# 26. Existing Database Structure
+# 22. Historical Data
 
-The existing core data model should remain intact.
+When a ticket is completed, it should disappear from the active operational queue.
 
-The current architecture already provides the foundation around:
+However, it should generally **not be physically deleted from the database**.
 
-* User
-* Branch
-* QueueTicket
-
-The consular workflow should be implemented around this existing structure rather than replacing the database architecture unnecessarily.
-
-Where additional operational data is required, it should be added carefully and consistently with the existing Prisma/PostgreSQL architecture.
-
-The project should avoid introducing a separate customer-account model merely to store ticket holders.
-
----
-
-# 27. Customer Accounts
-
-Customer accounts are outside the current MVP.
-
-Do not implement:
+"Destroy the ticket" in operational terms means:
 
 ```text
-Customer Registration
-Customer Login
-Customer Password
-Customer Profile
-```
-
-for the public ticketing workflow.
-
-A ticket is sufficient to participate in the queue.
-
----
-
-# 28. Security
-
-All staff and administrative operations must be protected by server-side authentication and authorization.
-
-Never rely solely on:
-
-* Hidden buttons
-* Client-side role checks
-* Disabled UI elements
-* Route visibility
-
-The API must independently verify:
-
-```text
-Authenticated?
+Active Queue
       ↓
-Correct role?
+Completed
       ↓
-Authorized operation?
+Removed from active operational views
+      ↓
+Historical data retained
 ```
 
-Public ticket creation is intentionally unauthenticated but must still validate all submitted data server-side.
+This is essential for reporting and analysis.
 
 ---
 
-# 29. Validation
+# 23. Analytics
 
-Use Zod for request validation.
+Historical data should eventually support:
 
-The same principle already used by:
+* Total tickets.
+* Completed tickets.
+* Tickets currently waiting.
+* Tickets on hold.
+* Average waiting time.
+* Average service time.
+* Average total processing time.
+* Average stage duration.
+* Tickets per service.
+* Tickets per queue stage.
+* Tickets per window.
+* Daily volume.
+* Peak periods.
 
-```text
-lib/validations/
-```
-
-should continue to be followed.
-
-Customer ticket creation should validate at least:
-
-```text
-firstName
-serviceId
-```
-
-The server must never trust client-side validation.
+Analytics should be based on persisted ticket history rather than temporary frontend state.
 
 ---
 
-# 30. API Architecture
+# 24. API Design
 
-The application should maintain clear separation between:
+Public APIs should be intentionally limited.
 
-### Public APIs
-
-Used by customers and public displays.
-
-Examples:
+Potential public endpoints include:
 
 ```text
 GET  /api/services
@@ -913,52 +795,120 @@ POST /api/tickets
 GET  /api/display
 ```
 
-### Staff APIs
-
-Used for queue operations.
-
-Examples:
+Staff endpoints may include:
 
 ```text
-GET   /api/queues
+GET   /api/staff/queues
 POST  /api/tickets/:id/call
-PATCH /api/tickets/:id/status
+POST  /api/tickets/:id/transition
+POST  /api/tickets/:id/hold
+POST  /api/tickets/:id/resume
 POST  /api/tickets/:id/complete
 ```
 
-### Administrative APIs
-
-Used for configuration.
-
-Examples:
+Administrative endpoints may include:
 
 ```text
-POST   /api/services
-PATCH  /api/services/:id
-DELETE /api/services/:id
-POST   /api/windows
-PATCH  /api/windows/:id
+GET    /api/admin/services
+POST   /api/admin/services
+PATCH  /api/admin/services/:id
+DELETE /api/admin/services/:id
 ```
 
-Exact endpoints should be finalized as implementation progresses.
+Actual endpoints should follow the existing project's conventions.
 
 ---
 
-# 31. Current Branch Functionality
+# 25. Validation
 
-The existing branch API supports:
+Zod should be used for important request validation.
+
+Validation must happen:
+
+1. On the client for user experience.
+2. On the server for security and data integrity.
+
+Client validation must never be considered sufficient protection.
+
+The existing validation pattern, such as:
 
 ```text
-GET    /api/branches
-POST   /api/branches
-GET    /api/branches/:id
-PATCH  /api/branches/:id
-DELETE /api/branches/:id
+lib/validations/
 ```
 
-Branch management is restricted to authenticated staff/administrators as appropriate.
+should be maintained.
 
-The existing branch components include:
+Possible schemas include:
+
+```text
+register.ts
+branch.ts
+service.ts
+ticket.ts
+queue.ts
+staff.ts
+```
+
+Only create schemas when the corresponding functionality requires them.
+
+---
+
+# 26. Authentication and Authorization
+
+The existing authentication infrastructure should be reused.
+
+Authentication answers:
+
+> Who is this user?
+
+Authorization answers:
+
+> What is this user allowed to do?
+
+For example:
+
+```text
+CUSTOMER
+    No authenticated account required.
+
+STAFF
+    Queue operations.
+
+ADMIN
+    System configuration.
+```
+
+Every protected API endpoint must verify authorization server-side.
+
+Do not rely solely on hiding buttons in the frontend.
+
+---
+
+# 27. Database Principles
+
+PostgreSQL remains the primary database.
+
+Prisma remains the ORM.
+
+The existing data model should be preserved where possible.
+
+The project should avoid unnecessary database restructuring during the 10-day implementation.
+
+When a new feature can be implemented using the existing structure, prefer that approach.
+
+If a schema modification becomes necessary, it must be:
+
+1. Reflected in `schema.prisma`.
+2. Migrated properly.
+3. Tested against existing functionality.
+4. Regenerated through Prisma.
+5. Documented.
+
+---
+
+# 28. Existing Branch Functionality
+
+The previous Intel-Q implementation contains branch functionality, including:
 
 ```text
 BranchCard
@@ -967,423 +917,510 @@ BranchList
 CreateBranchForm
 ```
 
-These should continue to follow the established API and Prisma architecture.
+and API routes such as:
+
+```text
+/api/branches
+/api/branches/[id]
+```
+
+The existing implementation should not be discarded automatically.
+
+Branches can remain part of the application's organization/service-location model.
+
+However, branch functionality must not prevent the new service/queue workflow from being developed.
+
+Where appropriate:
+
+```text
+Branch
+   ↓
+Services
+   ↓
+Queues
+   ↓
+Windows
+   ↓
+Tickets
+```
+
+The exact relationship should follow the existing Prisma model unless a schema change is explicitly required.
 
 ---
 
-# 32. UI Components
+# 29. Frontend Architecture
 
-Components should remain modular.
+Reusable components should be placed under:
 
-For example:
+```text
+components/
+```
+
+A possible organization is:
 
 ```text
 components/
 ├── auth/
 ├── branch/
-├── queue/
+├── customer/
 ├── ticket/
-├── services/
-├── display/
-└── admin/
+├── queue/
+├── staff/
+├── admin/
+└── display/
 ```
 
-Avoid placing the entire queue-management application inside one large component.
+Components should have clear responsibilities.
 
-Each component should have a clear responsibility.
+Avoid putting database or authorization logic inside presentational components.
 
 ---
 
-# 33. Public Customer Interface
+# 30. Client State Management
 
-The customer interface should be optimized for:
+Use React state for local UI state where appropriate.
 
-* Touch screens
-* Tablets
-* Smartphones
-* Simple navigation
-* Large buttons
-* High contrast
-* Minimal typing
-* Clear instructions
+Avoid unnecessary global state.
 
-The customer should be able to obtain a ticket within a few interactions.
+Server/API data should remain authoritative.
 
-The interface must not assume that every customer owns a smartphone.
+For example, after a staff member calls a ticket, the UI should update based on the server's confirmed result rather than assuming the operation succeeded.
+
+This is especially important for queue operations involving multiple staff members.
 
 ---
 
-# 34. Ticket Printing
+# 31. Error Handling
 
-The ticket-generation flow should support:
-
-### Touch-screen/kiosk
-
-```text
-Generate Ticket
-      ↓
-Print
-```
-
-### Smartphone
-
-```text
-Generate Ticket
-      ↓
-Download Ticket
-      ↓
-Optional Print
-```
-
-The downloadable ticket should be suitable for showing to staff if permitted by the operating environment.
-
----
-
-# 35. Phone Restrictions
-
-Some consular sections may prohibit phones inside the premises.
-
-The application must therefore not depend on a customer's phone for queue participation.
-
-The physical waiting-area device should provide the complete ticket-generation workflow.
-
-Example:
-
-```text
-Touchscreen iPad
-       ↓
-Services
-       ↓
-First Name
-       ↓
-Generate Ticket
-       ↓
-Printer
-       ↓
-Paper Ticket
-```
-
-The customer's first name and ticket number printed on the paper ticket provide the operational reference.
-
----
-
-# 36. Public Display Privacy
-
-Do not expose unnecessary personal information on public screens.
-
-Preferred:
-
-```text
-NOW SERVING
-
-IV-042
-WINDOW 3
-```
-
-Avoid:
-
-```text
-NOW SERVING
-
-Jean Tshibasu
-IV-042
-WINDOW 3
-```
-
-Only the minimum operational information required should be publicly visible.
-
----
-
-# 37. Analytics
-
-The system should retain timestamp information sufficient to calculate:
-
-* Time waiting for service
-* Time being served
-* Time on hold
-* Time between service stages
-* Total ticket lifecycle duration
-* Average service time
-* Average waiting time
-* Queue volume
-* Service demand
-* Window utilization
-* Tickets completed
-* Tickets placed on hold
-* Tickets returned to previous stages
-
-This data will become important for operational decision-making.
-
----
-
-# 38. Auditability
-
-Important actions should be traceable.
+API routes should return meaningful HTTP statuses.
 
 Examples:
 
 ```text
-Ticket created
-Ticket called
-Ticket recalled
-Status changed
-Ticket placed on hold
-Ticket resumed
-Ticket completed
+400 Bad Request
+401 Unauthorized
+403 Forbidden
+404 Not Found
+409 Conflict
+500 Internal Server Error
 ```
 
-Where applicable, record:
+Error messages returned to customers should be understandable without exposing internal implementation details.
 
-* User/staff member
-* Timestamp
-* Previous state
-* New state
-* Window
-* Service
+Do not expose:
 
----
+* Prisma errors.
+* Stack traces.
+* Database information.
+* Authentication internals.
+* Sensitive server information.
 
-# 39. Cloud Deployment
-
-Intel-Q is intended to be deployed as a cloud-based application.
-
-The architecture should therefore keep:
-
-* Database credentials server-side
-* Authentication secrets server-side
-* API authorization server-side
-* Environment variables secure
-* Client-side code free of sensitive credentials
-
-The application should be compatible with the project's existing Next.js deployment environment.
+Server logs may contain diagnostic information where appropriate.
 
 ---
 
-# 40. Development Stack
+# 32. Loading and Empty States
 
-The current project uses:
+Every major asynchronous interface should handle:
 
-* Next.js
-* React
-* TypeScript
-* Tailwind CSS
-* PostgreSQL
-* Prisma ORM
-* NextAuth/Auth.js authentication
-* Zod validation
-* bcrypt password hashing
+* Loading.
+* Success.
+* Empty.
+* Error.
 
-These technologies should remain consistent unless a deliberate architectural decision is made.
+For example, a queue page should not remain blank while data loads.
+
+Use consistent patterns throughout the application.
 
 ---
 
-# 41. Development Rules
+# 33. Accessibility
 
-When implementing new functionality:
+The application should be usable by as many customers as possible.
 
-1. Reuse existing Prisma models where possible.
-2. Reuse existing authentication infrastructure.
-3. Validate requests with Zod.
-4. Validate data on the server.
-5. Keep customer workflows unauthenticated.
-6. Keep staff/admin workflows authenticated.
-7. Keep authorization on the server.
-8. Do not expose customer names on public displays.
-9. Generate ticket numbers server-side.
-10. Store timestamps for status transitions.
-11. Do not physically delete completed tickets when historical data is required.
-12. Keep components small and reusable.
-13. Avoid hard-coding the consular workflow into generic queue logic.
-14. Keep the UI accessible and touch-friendly.
-15. Avoid unnecessary changes to the existing database architecture.
+Forms should provide:
+
+* Proper labels.
+* Keyboard navigation.
+* Visible focus states.
+* Accessible error messages.
+* `aria-invalid` where appropriate.
+* `aria-describedby` for validation messages.
+
+The public display should use large, high-contrast ticket numbers that can be read from a distance.
 
 ---
 
-# 42. Target Architecture
+# 34. Responsive Design
 
-The intended high-level architecture is:
+The application must support:
+
+### Customer
 
 ```text
-                    ┌─────────────────────┐
-                    │   Customer Welcome  │
-                    │       Page          │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │    Services Page    │
-                    │     Public           │
-                    └──────────┬──────────┘
-                               │
-                     Select Service
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │   Enter First Name  │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │  Generate Ticket    │
-                    └──────────┬──────────┘
-                               │
-                  ┌────────────┴────────────┐
-                  ▼                         ▼
-             Print Ticket              Download
-                  │
-                  ▼
-             Waiting Area
-                  │
-                  │
-                  ▼
-        ┌───────────────────────┐
-        │   Staff Queue UI      │
-        │                       │
-        │ Call / Status / Hold  │
-        └───────────┬───────────┘
-                    │
-                    ▼
-        ┌───────────────────────┐
-        │ Customer Display      │
-        │                       │
-        │ Ticket + Window       │
-        │ Audio Announcement    │
-        └───────────────────────┘
+Mobile
+Tablet
+Kiosk
+Desktop
 ```
 
----
-
-# 43. MVP Success Criteria
-
-The MVP should be considered operationally successful when the following workflow works from beginning to end:
+### Staff
 
 ```text
-1. Staff logs in.
-
-2. Staff opens a service.
-
-3. Service becomes visible publicly.
-
-4. Customer opens the Services page.
-
-5. Customer selects a service.
-
-6. Customer enters a first name.
-
-7. Server generates a unique ticket.
-
-8. Customer prints or downloads the ticket.
-
-9. Ticket appears in the appropriate queue.
-
-10. Staff calls the ticket.
-
-11. Customer display updates.
-
-12. Audible announcement plays.
-
-13. Staff changes the ticket status.
-
-14. Ticket appears in the next appropriate queue.
-
-15. Another staff member calls the ticket.
-
-16. The process repeats.
-
-17. Final staff member completes the ticket.
-
-18. Ticket disappears from active queues.
-
-19. Ticket history remains available for analytics.
-
-20. Timing data is retained for reporting.
+Tablet
+Laptop
+Desktop
 ```
 
----
-
-# 44. Important Product Principle
-
-Intel-Q should not be designed around the assumption that the customer owns a smartphone.
-
-The smartphone is an optional convenience.
-
-The core workflow must work using:
+### Display
 
 ```text
-Public Services Page
-        +
-Touchscreen/Kiosk
-        +
-Printer
-        +
-Paper Ticket
-        +
-Customer Display
-        +
-Staff Windows
+TV
+Monitor
+Tablet
+Desktop
 ```
 
-This makes Intel-Q suitable for real-world environments where customers may have limited access to technology or where phones are prohibited.
+Avoid layouts that depend on a specific screen size.
 
 ---
 
-# 45. Future Extensibility
+# 35. QR Code
 
-Although the current implementation is focused on the consular use case, the queue engine should remain sufficiently generic to support other organizations later.
+The Customer Welcome Page should provide a QR code pointing to the public Services Page.
 
-The system should eventually allow configuration of:
+The QR code must:
 
-* Organization name
-* Logo
-* Theme colors
-* Services
-* Service workflows
-* Queue statuses
-* Number of windows
-* Window names/numbers
-* Staff members
-* Display configuration
-* Ticket prefixes
-* Operating hours
+* Be large enough to scan.
+* Have adequate contrast.
+* Have a human-readable URL beneath it.
+* Point to the correct production URL after deployment.
 
-However, these configuration capabilities should be introduced incrementally.
-
-The current MVP should prioritize a stable and professional queue workflow before introducing a full multi-tenant configuration system.
+The QR destination must not require authentication.
 
 ---
 
-# 46. Current Implementation Priority
+# 36. Security Considerations for Public Ticket Issuing
 
-Development should proceed in this order:
+Because customers do not authenticate, the ticket endpoint is publicly accessible.
+
+The system should consider:
+
+* Request validation.
+* Rate limiting.
+* Duplicate submission protection.
+* Reasonable request limits.
+* Service availability checks.
+* Server-generated ticket numbers.
+* Server-side timestamps.
+* Prevention of unauthorized ticket manipulation.
+
+Do not trust ticket IDs, statuses, service IDs, or timestamps supplied by the customer.
+
+The backend should determine these values.
+
+---
+
+# 37. Configuration Philosophy
+
+The consular deployment is an initial configuration.
+
+Avoid hardcoding:
 
 ```text
-1. Authentication
-        ↓
-2. Public Services
-        ↓
-3. Customer first-name ticket creation
-        ↓
-4. Ticket numbering
-        ↓
-5. Staff queue management
-        ↓
-6. Ticket calling
-        ↓
-7. Customer display
-        ↓
-8. Audio announcements
-        ↓
-9. Status transitions
-        ↓
-10. Ticket history/timing
-        ↓
-11. Completion/archive
-        ↓
-12. Analytics
-        ↓
-13. Administrative configuration
+Citizen Services
+Immigrant Visas
+Window 1
+Window 2
 ```
 
-The immediate goal is not to build every possible feature.
+into application logic.
 
-The immediate goal is to build a **reliable end-to-end queue lifecycle** that can be demonstrated and used operationally.
+Instead, these should eventually come from configuration/database data.
+
+This allows Intel-Q to support another organization without rewriting the core queue engine.
+
+---
+
+# 38. Development Milestones
+
+Development is divided into ten milestones.
+
+```text
+01 - Project Foundation & Refactoring
+02 - Authentication & Authorization
+03 - Services & Queue Configuration
+04 - Customer Ticket Issuing
+05 - Staff Window & Queue Management
+06 - Ticket State Machine & Workflow
+07 - Customer Display & Voice Calling
+08 - Ticket Completion & Analytics
+09 - UI, Security & Hardening
+10 - Testing, Deployment & Documentation
+```
+
+Each milestone is represented by a separate Markdown issue file.
+
+---
+
+# 39. Ten-Day Implementation Strategy
+
+## Day 1
+
+Foundation and refactoring.
+
+Verify:
+
+* Project builds.
+* Database works.
+* Authentication works.
+* Existing components remain functional.
+
+## Day 2
+
+Staff/Admin authentication and authorization.
+
+## Day 3
+
+Services and queue-stage configuration.
+
+## Day 4
+
+Customer service page and ticket issuing.
+
+## Day 5
+
+Staff dashboard and window operations.
+
+## Day 6
+
+Ticket transitions and timing.
+
+## Day 7
+
+Customer display and voice announcements.
+
+## Day 8
+
+Completion and historical/analytical data.
+
+## Day 9
+
+UI polish, security, validation, and edge cases.
+
+## Day 10
+
+Full testing, production deployment, documentation, and final demonstration preparation.
+
+---
+
+# 40. MVP Priority
+
+If development time becomes constrained, prioritize the following:
+
+### Critical
+
+1. Customer ticket issuing.
+2. Staff authentication.
+3. Service/queue selection.
+4. Ticket calling.
+5. Ticket transitions.
+6. Customer display.
+7. Window identification.
+8. Ticket completion.
+9. Database persistence.
+
+### Important
+
+10. Voice announcements.
+11. Ticket printing.
+12. Ticket download.
+13. Timing calculations.
+14. Admin service configuration.
+
+### Secondary
+
+15. Advanced analytics.
+16. Advanced reporting.
+17. Advanced configuration.
+18. UI refinements beyond the core professional experience.
+
+The application must have a working end-to-end queue workflow before advanced features are prioritized.
+
+---
+
+# 41. End-to-End Workflow
+
+The complete expected workflow is:
+
+```text
+ADMIN
+  │
+  ├── Login
+  │
+  ├── Configure Services
+  │
+  ├── Configure Queue Stages
+  │
+  └── Enable Services
+           │
+           ▼
+CUSTOMER
+  │
+  ├── Open Welcome Page
+  │
+  ├── Scan QR Code / Open Services
+  │
+  ├── Select Service
+  │
+  ├── Enter First Name
+  │
+  └── Print / Download Ticket
+           │
+           ▼
+STAFF
+  │
+  ├── Login
+  │
+  ├── Select Window
+  │
+  ├── Select Service
+  │
+  ├── Select Queue Stage
+  │
+  └── Call Ticket
+           │
+           ▼
+CUSTOMER DISPLAY
+  │
+  ├── Show Ticket Number
+  ├── Show Window
+  └── Announce Ticket
+           │
+           ▼
+STAFF
+  │
+  ├── Serve Customer
+  │
+  ├── Complete Current Stage
+  │
+  └── Move Ticket
+           │
+           ▼
+NEXT QUEUE
+  │
+  ├── Ticket becomes pending
+  ├── Next staff member calls ticket
+  └── Customer display updates
+           │
+           ▼
+FINAL WINDOW
+  │
+  └── Complete Ticket
+           │
+           ▼
+HISTORICAL DATA
+  │
+  ├── Waiting Times
+  ├── Stage Times
+  ├── Service Times
+  └── Total Processing Time
+```
+
+---
+
+# 42. Definition of Done
+
+A milestone is considered complete only when:
+
+* The feature works in the UI.
+* Its API behavior is implemented.
+* Server-side validation exists where necessary.
+* Authentication/authorization is enforced where required.
+* Errors are handled.
+* Loading states are handled.
+* The feature works against PostgreSQL/Prisma.
+* TypeScript builds without errors.
+* Existing functionality has not been unnecessarily broken.
+* The relevant issue documentation is updated.
+
+---
+
+# 43. Final Product Definition
+
+At the end of the ten-day implementation, Intel-Q should provide a complete operational queue-management MVP.
+
+A customer should be able to walk into a consular section and:
+
+```text
+Scan QR
+   ↓
+Select Service
+   ↓
+Enter First Name
+   ↓
+Receive Ticket
+   ↓
+Wait
+   ↓
+See Ticket Called
+   ↓
+Hear Announcement
+   ↓
+Go to Window
+   ↓
+Continue Through Required Stages
+   ↓
+Complete Service
+```
+
+Staff should be able to:
+
+```text
+Login
+   ↓
+Select Window
+   ↓
+Select Queue
+   ↓
+Call Customer
+   ↓
+Serve Customer
+   ↓
+Move Ticket
+   ↓
+Complete Ticket
+```
+
+Administrators should be able to:
+
+```text
+Login
+   ↓
+Configure Services
+   ↓
+Configure Queues
+   ↓
+Enable/Disable Services
+   ↓
+Manage Operational Configuration
+```
+
+The system should retain the operational history required to answer questions such as:
+
+* How many customers were served today?
+* Which service is busiest?
+* How long do customers wait before being served?
+* Which queue stage takes the longest?
+* Which windows process the most tickets?
+* How long does the complete customer journey take?
+
+The resulting system should remain simple for customers and staff while providing a strong technical foundation for future Intel-Q functionality.
+
+---
+
+# 44. Guiding Principle
+
+> **Keep the customer experience simple, keep staff operations fast, keep administration configurable, and keep the queue engine generic.**
+
+The consular section is the first real-world use case. Intel-Q itself should remain a reusable queue-management platform.
