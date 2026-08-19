@@ -41,17 +41,17 @@ export default function Footer() {
               </Link>
 
               <Link
-                href="/login"
+                href="/login/staff"
                 className="w-fit text-sm text-[#64748B] transition-colors hover:text-[#2563EB]"
               >
-                Login
+                Staff
               </Link>
 
               <Link
-                href="/register"
+                href="/login/admin"
                 className="w-fit text-sm text-[#64748B] transition-colors hover:text-[#2563EB]"
               >
-                Register
+                Admin
               </Link>
             </nav>
           </div>

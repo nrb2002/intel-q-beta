@@ -26,30 +26,21 @@ export function CTASection() {
               id="cta-heading"
               className="text-3xl font-bold tracking-tight text-white sm:text-4xl"
             >
-              Ready to make your queues smarter?
+              Ready to explore our smart queue management system?
             </h2>
 
             <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-white/85 sm:text-lg">
-              Join Intel-Q and give your customers a simpler, more transparent
-              waiting experience while helping your team manage queues more
-              efficiently.
+              Our customers&apos; time is more than precious. We believe you deserve a simpler, more transparent waiting experience.
             </p>
 
             {/* Actions */}
             <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link
-                href="/register"
+                href="/services"
                 className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-white px-6 py-3 text-sm font-semibold text-[#2563EB] shadow-sm transition-colors hover:bg-[#F8FAFC] focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#2563EB] sm:w-auto"
               >
                 Get Started
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </Link>
-
-              <Link
-                href="/login"
-                className="inline-flex w-full items-center justify-center rounded-md border border-white/40 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#2563EB] sm:w-auto"
-              >
-                Sign In
               </Link>
             </div>
           </div>

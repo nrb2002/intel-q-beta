@@ -1,4 +1,4 @@
-// app/login/page.tsx
+// app/login/admin/page.tsx
 
 import type { Metadata } from "next";
 
@@ -8,8 +8,7 @@ import LoginForm from "@/components/auth/LoginForm";
 
 export const metadata: Metadata = {
   title: "Administrator Sign In | Intel-Q",
-  description:
-    "Sign in to Intel-Q to manage administration and operational configuration.",
+  description: "Sign in to Intel-Q administration.",
 };
 
 export default function AdminLoginPage() {
@@ -18,10 +17,11 @@ export default function AdminLoginPage() {
       <Header />
 
       <main className="flex flex-1 items-center justify-center px-4 py-6">
-        <LoginForm role="ADMIN" />
+        <LoginForm expectedRole="ADMIN" />
       </main>
 
       <Footer />
     </div>
   );
 }
+

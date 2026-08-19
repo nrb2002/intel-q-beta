@@ -1,24 +1,30 @@
+// components/auth/LoginForm.tsx
+
 "use client";
 
 import { useState } from "react";
+
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
+import {
+  getSession,
+  signIn,
+} from "next-auth/react";
 
 import { loginSchema } from "@/lib/validations/login";
 
-type UserRole = "STAFF" | "ADMIN";
+type LoginRole = "STAFF" | "ADMIN";
+
+type LoginFormProps = {
+  expectedRole: LoginRole;
+};
 
 type FieldErrors = {
   email?: string[];
   password?: string[];
 };
 
-interface LoginFormProps {
-  role: UserRole;
-}
-
 export default function LoginForm({
-  role,
+  expectedRole,
 }: LoginFormProps) {
   const router = useRouter();
 
@@ -33,7 +39,7 @@ export default function LoginForm({
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const isAdmin = role === "ADMIN";
+  const isAdminLogin = expectedRole === "ADMIN";
 
   function handleChange(
     event: React.ChangeEvent<HTMLInputElement>,
@@ -92,52 +98,51 @@ export default function LoginForm({
       }
 
       /*
-       * The credentials are valid, but we still need to
-       * verify that the authenticated user has permission
-       * to enter this particular area.
-       *
-       * The server-side protected page/API remains the
-       * final authority.
+       * Retrieve the newly created session and verify
+       * the user's role before redirecting.
        */
-      const response = await fetch("/api/auth/session", {
-        method: "GET",
-        cache: "no-store",
-      });
+      const session = await getSession();
 
-      if (!response.ok) {
-        setError(
-          "Unable to verify your account permissions.",
-        );
-        return;
-      }
+      const userRole = session?.user?.role;
 
-      const session = await response.json();
-
-      const authenticatedRole = session?.user?.role;
-
-      if (isAdmin) {
-        if (authenticatedRole !== "ADMIN") {
-          setError(
-            "You do not have administrator access.",
-          );
-          return;
-        }
-
-        router.push("/admin");
-        return;
-      }
-
+      /*
+       * ADMIN can access the staff operational area,
+       * but the admin login endpoint is restricted to
+       * ADMIN users.
+       */
       if (
-        authenticatedRole !== "STAFF" &&
-        authenticatedRole !== "ADMIN"
+        expectedRole === "ADMIN" &&
+        userRole !== "ADMIN"
       ) {
         setError(
-          "You do not have staff access.",
+          "This account does not have administrator access.",
         );
+
         return;
       }
 
-      router.push("/staff");
+      /*
+       * Staff login accepts STAFF and ADMIN accounts.
+       */
+      if (
+        expectedRole === "STAFF" &&
+        userRole !== "STAFF" &&
+        userRole !== "ADMIN"
+      ) {
+        setError(
+          "This account does not have staff access.",
+        );
+
+        return;
+      }
+
+      router.push(
+        expectedRole === "ADMIN"
+          ? "/admin"
+          : "/staff",
+      );
+
+      router.refresh();
     } catch (error) {
       console.error("Login error:", error);
 
@@ -165,23 +170,26 @@ export default function LoginForm({
   return (
     <div className="w-full max-w-md">
       <div className="rounded-2xl border border-[#E2E8F0] bg-white p-8 shadow-lg">
-
-        {/* Header */}
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-[#1E293B]">
-            {isAdmin
-              ? "Administrator Sign In"
-              : "Staff Sign In"}
+          <p className="text-sm font-medium text-[#2563EB]">
+            {isAdminLogin
+              ? "Administrator Access"
+              : "Staff Access"}
+          </p>
+
+          <h1 className="mt-2 text-3xl font-bold text-[#1E293B]">
+            {isAdminLogin
+              ? "Admins only"
+              : "Staff Members only"}
           </h1>
 
           <p className="mt-2 text-sm text-[#64748B]">
-            {isAdmin
-              ? "Sign in to manage Intel-Q configuration and administration."
-              : "Sign in to manage customer queues and service operations."}
+            {isAdminLogin
+              ? "Sign in to manage Intel-Q administration."
+              : "Sign in to manage customer queues."}
           </p>
         </div>
 
-        {/* General Error */}
         {error && (
           <div
             role="alert"
@@ -197,7 +205,6 @@ export default function LoginForm({
           className="space-y-5"
           noValidate
         >
-          {/* Email */}
           <div>
             <label
               htmlFor="email"
@@ -212,7 +219,7 @@ export default function LoginForm({
               type="email"
               value={formData.email}
               onChange={handleChange}
-              autoComplete="username"
+              autoComplete="email"
               placeholder="you@example.com"
               aria-describedby="email-error"
               aria-invalid={!!fieldErrors.email}
@@ -231,7 +238,6 @@ export default function LoginForm({
             </div>
           </div>
 
-          {/* Password */}
           <div>
             <label
               htmlFor="password"
@@ -276,57 +282,7 @@ export default function LoginForm({
                 }
                 className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-2 text-[#64748B] transition hover:bg-[#F1F5F9] hover:text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#2563EB] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {showPassword ? (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    className="h-5 w-5"
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M3 3l18 18"
-                    />
-
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M10.584 10.587a2 2 0 002.829 2.829"
-                    />
-
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M9.88 4.24A9.77 9.77 0 0112 4c5 0 8.27 4.11 9 8-.25 1.31-.79 2.54-1.53 3.6M6.61 6.61C4.85 7.83 3.7 9.63 3 12c.73 3.89 4 8 9 8 1.61 0 3.08-.41 4.38-1.11"
-                    />
-                  </svg>
-                ) : (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    className="h-5 w-5"
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M2.25 12s3.75-7.5 9.75-7.5 9.75 7.5 9.75 7.5-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"
-                    />
-
-                    <circle
-                      cx="12"
-                      cy="12"
-                      r="3"
-                    />
-                  </svg>
-                )}
+                {showPassword ? "Hide" : "Show"}
               </button>
             </div>
 
@@ -341,7 +297,6 @@ export default function LoginForm({
             </div>
           </div>
 
-          {/* Submit */}
           <button
             type="submit"
             disabled={loading}
@@ -350,9 +305,7 @@ export default function LoginForm({
           >
             {loading
               ? "Signing in..."
-              : isAdmin
-                ? "Sign in as Administrator"
-                : "Sign in as Staff"}
+              : "Sign in"}
           </button>
         </form>
       </div>

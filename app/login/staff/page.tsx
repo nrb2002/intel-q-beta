@@ -8,8 +8,7 @@ import LoginForm from "@/components/auth/LoginForm";
 
 export const metadata: Metadata = {
   title: "Staff Sign In | Intel-Q",
-  description:
-    "Sign in to Intel-Q to manage customer queues and service operations.",
+  description: "Sign in to Intel-Q staff queue management.",
 };
 
 export default function StaffLoginPage() {
@@ -18,7 +17,7 @@ export default function StaffLoginPage() {
       <Header />
 
       <main className="flex flex-1 items-center justify-center px-4 py-6">
-        <LoginForm role="STAFF" />
+        <LoginForm expectedRole="STAFF" />
       </main>
 
       <Footer />
