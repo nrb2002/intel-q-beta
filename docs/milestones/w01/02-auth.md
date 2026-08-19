@@ -170,3 +170,27 @@ ADMIN
 10. Protect staff/admin API routes.
 11. Test role boundaries.
 12. Test logout/session expiration.
+
+We'll centralize:
+
+- checking whether a user is logged in;
+- checking whether the user is STAFF;
+- checking whether the user is ADMIN;
+- returning/throwing the appropriate unauthorized or forbidden response;
+- making sure an ADMIN can also perform staff operations where appropriate.
+
+For example, the final authorization model will be:
+
+## Area	               Customer	   Staff      Admin
+
+- Public Services	         ✅	      ✅	      ✅
+- Print Ticket	            ✅	      ✅	      ✅
+- Staff Dashboard	         ❌	      ✅	      ✅
+- Queue Operations	      ❌	      ✅       	✅
+- Call Ticket	            ❌       	✅       	✅
+- Transition Ticket	      ❌       	✅       	✅
+- Admin Dashboard	         ❌       	❌       	✅
+- Configure Services	      ❌	      ❌       	✅
+- Configure Queue Stages	❌	      ❌       	✅
+- Manage Windows	         ❌	      ❌       	✅
+ 

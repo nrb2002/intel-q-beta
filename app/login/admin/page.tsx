@@ -7,17 +7,18 @@ import Footer from "@/components/layout/Footer";
 import LoginForm from "@/components/auth/LoginForm";
 
 export const metadata: Metadata = {
-  title: "Sign In | Intel-Q",
-  description: "Sign in to your Intel-Q account and manage your queue experience.",
+  title: "Administrator Sign In | Intel-Q",
+  description:
+    "Sign in to Intel-Q to manage administration and operational configuration.",
 };
 
-export default function LoginPage() {
+export default function AdminLoginPage() {
   return (
     <div className="flex min-h-screen flex-col bg-[#F8FAFC]">
       <Header />
 
       <main className="flex flex-1 items-center justify-center px-4 py-6">
-        <LoginForm />
+        <LoginForm role="ADMIN" />
       </main>
 
       <Footer />

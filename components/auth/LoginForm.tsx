@@ -1,20 +1,25 @@
-// components/auth/LoginForm.tsx
-
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 
 import { loginSchema } from "@/lib/validations/login";
+
+type UserRole = "STAFF" | "ADMIN";
 
 type FieldErrors = {
   email?: string[];
   password?: string[];
 };
 
-export default function LoginForm() {
+interface LoginFormProps {
+  role: UserRole;
+}
+
+export default function LoginForm({
+  role,
+}: LoginFormProps) {
   const router = useRouter();
 
   const [formData, setFormData] = useState({
@@ -26,12 +31,12 @@ export default function LoginForm() {
   const [fieldErrors, setFieldErrors] =
     useState<FieldErrors>({});
   const [loading, setLoading] = useState(false);
-
-  // Controls whether the password is visible.
   const [showPassword, setShowPassword] = useState(false);
 
+  const isAdmin = role === "ADMIN";
+
   function handleChange(
-    event: React.ChangeEvent<HTMLInputElement>
+    event: React.ChangeEvent<HTMLInputElement>,
   ) {
     const { name, value } = event.target;
 
@@ -40,20 +45,18 @@ export default function LoginForm() {
       [name]: value,
     }));
 
-    // Clear the field error when the user starts correcting it.
     setFieldErrors((current) => ({
       ...current,
       [name]: undefined,
     }));
 
-    // Clear the general error.
     if (error) {
       setError("");
     }
   }
 
   async function handleSubmit(
-    event: React.FormEvent<HTMLFormElement>
+    event: React.FormEvent<HTMLFormElement>,
   ) {
     event.preventDefault();
 
@@ -68,7 +71,7 @@ export default function LoginForm() {
     if (!parsed.success) {
       setFieldErrors(
         parsed.error.flatten()
-          .fieldErrors as FieldErrors
+          .fieldErrors as FieldErrors,
       );
 
       return;
@@ -88,12 +91,58 @@ export default function LoginForm() {
         return;
       }
 
-      router.push("/dashboard");
+      /*
+       * The credentials are valid, but we still need to
+       * verify that the authenticated user has permission
+       * to enter this particular area.
+       *
+       * The server-side protected page/API remains the
+       * final authority.
+       */
+      const response = await fetch("/api/auth/session", {
+        method: "GET",
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        setError(
+          "Unable to verify your account permissions.",
+        );
+        return;
+      }
+
+      const session = await response.json();
+
+      const authenticatedRole = session?.user?.role;
+
+      if (isAdmin) {
+        if (authenticatedRole !== "ADMIN") {
+          setError(
+            "You do not have administrator access.",
+          );
+          return;
+        }
+
+        router.push("/admin");
+        return;
+      }
+
+      if (
+        authenticatedRole !== "STAFF" &&
+        authenticatedRole !== "ADMIN"
+      ) {
+        setError(
+          "You do not have staff access.",
+        );
+        return;
+      }
+
+      router.push("/staff");
     } catch (error) {
       console.error("Login error:", error);
 
       setError(
-        "Unable to sign in. Please try again."
+        "Unable to sign in. Please try again.",
       );
     } finally {
       setLoading(false);
@@ -104,7 +153,7 @@ export default function LoginForm() {
     "w-full rounded-lg border border-[#CBD5E1] bg-white px-4 py-3 text-sm text-[#1E293B] placeholder:text-[#94A3B8] outline-none transition focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 disabled:cursor-not-allowed disabled:bg-[#F8FAFC]";
 
   function getInputClassName(
-    field: keyof FieldErrors
+    field: keyof FieldErrors,
   ) {
     if (fieldErrors[field]) {
       return `${inputClassName} border-red-500 focus:border-red-500 focus:ring-red-500/20`;
@@ -120,12 +169,15 @@ export default function LoginForm() {
         {/* Header */}
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold text-[#1E293B]">
-            Login
+            {isAdmin
+              ? "Administrator Sign In"
+              : "Staff Sign In"}
           </h1>
 
           <p className="mt-2 text-sm text-[#64748B]">
-            Sign in with your credentials to manage
-            queues.
+            {isAdmin
+              ? "Sign in to manage Intel-Q configuration and administration."
+              : "Sign in to manage customer queues and service operations."}
           </p>
         </div>
 
@@ -160,7 +212,7 @@ export default function LoginForm() {
               type="email"
               value={formData.email}
               onChange={handleChange}
-              autoComplete="email"
+              autoComplete="username"
               placeholder="you@example.com"
               aria-describedby="email-error"
               aria-invalid={!!fieldErrors.email}
@@ -188,7 +240,6 @@ export default function LoginForm() {
               Password
             </label>
 
-            {/* Password input + eye button */}
             <div className="relative">
               <input
                 id="password"
@@ -206,7 +257,7 @@ export default function LoginForm() {
                 aria-invalid={!!fieldErrors.password}
                 disabled={loading}
                 className={`${getInputClassName(
-                  "password"
+                  "password",
                 )} pr-12`}
               />
 
@@ -214,7 +265,7 @@ export default function LoginForm() {
                 type="button"
                 onClick={() =>
                   setShowPassword(
-                    (current) => !current
+                    (current) => !current,
                   )
                 }
                 disabled={loading}
@@ -226,7 +277,6 @@ export default function LoginForm() {
                 className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-2 text-[#64748B] transition hover:bg-[#F1F5F9] hover:text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-[#2563EB] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {showPassword ? (
-                  /* Eye-off icon */
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 24 24"
@@ -255,7 +305,6 @@ export default function LoginForm() {
                     />
                   </svg>
                 ) : (
-                  /* Eye icon */
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 24 24"
@@ -301,21 +350,11 @@ export default function LoginForm() {
           >
             {loading
               ? "Signing in..."
-              : "Sign in"}
+              : isAdmin
+                ? "Sign in as Administrator"
+                : "Sign in as Staff"}
           </button>
         </form>
-
-        {/* Register Link */}
-        <p className="mt-6 text-center text-sm text-[#64748B]">
-          Don&apos;t have an account?{" "}
-
-          <Link
-            href="/register"
-            className="font-semibold text-[#2563EB] hover:underline"
-          >
-            Create an account
-          </Link>
-        </p>
       </div>
     </div>
   );
