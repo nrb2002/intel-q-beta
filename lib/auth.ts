@@ -30,6 +30,7 @@ export const {
           label: "Email",
           type: "email",
         },
+
         password: {
           label: "Password",
           type: "password",
@@ -46,7 +47,9 @@ export const {
           return null;
         }
 
-        const email = credentials.email.trim().toLowerCase();
+        const email = credentials.email
+          .trim()
+          .toLowerCase();
 
         const user = await prisma.user.findUnique({
           where: {
@@ -60,7 +63,7 @@ export const {
 
         const passwordMatches = await bcrypt.compare(
           credentials.password,
-          user.password
+          user.password,
         );
 
         if (!passwordMatches) {
@@ -81,15 +84,39 @@ export const {
     strategy: "jwt",
   },
 
+  /*
+   * The public customer workflow does not require
+   * authentication.
+   *
+   * Staff and admin pages will perform their own
+   * server-side authorization checks.
+   */
   pages: {
-    signIn: "/login",
+    signIn: "/login/staff",
   },
 
   callbacks: {
-    async authorized({ auth }) {
-      return !!auth?.user;
+    /*
+     * Do not globally require authentication here.
+     *
+     * Intel-Q has public customer pages where users
+     * must be able to:
+     *
+     * - View available services
+     * - Select a service
+     * - Enter their first name
+     * - Print/download a ticket
+     *
+     * Protected staff/admin pages will call auth()
+     * and explicitly verify the user's role.
+     */
+    async authorized() {
+      return true;
     },
 
+    /*
+     * Store user identity and role in the JWT.
+     */
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
@@ -99,6 +126,10 @@ export const {
       return token;
     },
 
+    /*
+     * Expose the user ID and role to the application
+     * through the session.
+     */
     async session({ session, token }) {
       if (session.user) {
         if (typeof token.id === "string") {

@@ -54,3 +54,119 @@ Can:
 - Admin login.
 - Route protection.
 - Server-side authorization.
+
+
+# Authentication & Authorization structure
+
+app/
+├── login/
+│   ├── staff/
+│   │   └── page.tsx
+│   └── admin/
+│       └── page.tsx
+│
+├── staff/
+│   ├── layout.tsx
+│   └── page.tsx
+│
+├── admin/
+│   ├── layout.tsx
+│   └── page.tsx
+│
+└── api/
+    └── auth/
+        └── [...nextauth]/
+
+lib/
+├── auth.ts
+├── auth/
+│   ├── authorization.ts
+│   └── require-role.ts
+└── validations/
+
+Important change from the old Intel-Q
+
+We should not make /login the main customer entry point anymore.
+
+The public flow becomes:
+
+Customer
+   │
+   ▼
+Public Welcome Page
+   │
+   ▼
+Services Page
+   │
+   ▼
+Select Service
+   │
+   ▼
+Enter First Name
+   │
+   ▼
+Print / Download Ticket
+
+Authentication is completely outside that flow:
+
+                    ┌───────────────┐
+                    │   Intel-Q     │
+                    │ Public Portal │
+                    └───────┬───────┘
+                            │
+             ┌──────────────┴──────────────┐
+             ▼                             ▼
+       Customer Flow                 Staff/Admin
+       No account                    Authentication
+             │                             │
+             ▼                     ┌───────┴───────┐
+       Services/Tickets             ▼               ▼
+                                STAFF LOGIN      ADMIN LOGIN
+                                    │               │
+                                    ▼               ▼
+                               /staff            /admin
+Authorization model
+
+The server should use a reusable role-checking function rather than duplicating this everywhere:
+
+const isStaff =
+  session.user.role === "STAFF" ||
+  session.user.role === "ADMIN";
+
+For example:
+
+await requireRole("STAFF");
+
+would allow both STAFF and ADMIN, while:
+
+await requireRole("ADMIN");
+
+would allow administrators only.
+
+This becomes especially important later when we implement:
+
+service configuration,
+queue-stage configuration,
+window management,
+ticket operations,
+operational settings.
+One thing I want to preserve
+
+
+## Milestone 02 implementation order
+
+1. Inspect the existing lib/auth.ts and Auth.js configuration
+2. Confirm the Prisma User.role enum contains:
+CUSTOMER
+STAFF
+ADMIN
+3. Confirm credentials/password authentication works.
+4. Add reusable authorization helpers.
+5. Create /login/staff.
+6. Crete /login/admin.
+7. Create /staff.
+8. Create /admin.
+9. Add server-side route protection.
+10. Protect staff/admin API routes.
+11. Test role boundaries.
+12. Test logout/session expiration.
