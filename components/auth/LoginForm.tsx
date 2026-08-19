@@ -179,8 +179,8 @@ export default function LoginForm({
 
           <h1 className="mt-2 text-3xl font-bold text-[#1E293B]">
             {isAdminLogin
-              ? "Admins only"
-              : "Staff Members only"}
+              ? "Admins"
+              : "Staff Members"}
           </h1>
 
           <p className="mt-2 text-sm text-[#64748B]">
