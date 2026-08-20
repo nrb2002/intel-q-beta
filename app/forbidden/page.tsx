@@ -10,13 +10,9 @@ export default function ForbiddenPage() {
           !
         </div>
 
-        <h1 className="mt-4 text-2xl font-bold text-gray-900">
-          Access Forbidden
-        </h1>
+        <h1 className="mt-4 text-2xl font-bold text-gray-900">Access Forbidden</h1>
 
-        <p className="mt-2 text-gray-600">
-          You do not have permission to access this area.
-        </p>
+        <p className="mt-2 text-gray-600">You do not have permission to access this area.</p>
 
         <Link
           href="/"

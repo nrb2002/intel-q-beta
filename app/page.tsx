@@ -21,12 +21,10 @@ export default function HomePage() {
         <CTASection />
 
         {/* How it works */}
-        <HowItWorksSection />        
-        
+        <HowItWorksSection />
       </main>
 
       <Footer />
     </div>
   );
 }
-

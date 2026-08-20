@@ -7,7 +7,7 @@ import Footer from "@/components/layout/Footer";
 import LoginForm from "@/components/auth/LoginForm";
 
 export const metadata: Metadata = {
-  title: "Staff Sign In | Intel-Q",
+  title: "Staff Login | Intel-Q",
   description: "Sign in to Intel-Q staff queue management.",
 };
 

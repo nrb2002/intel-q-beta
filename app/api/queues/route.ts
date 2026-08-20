@@ -3,41 +3,22 @@
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
+import { requireRole } from "@/lib/auth/authorization";
 import { prisma } from "@/lib/db";
 import { QueueStatus } from "@/generated/prisma";
 import { createTicketSchema } from "@/lib/validations/queue";
 
 // GET /api/queues
 //
-// Returns queue tickets for the authenticated user.
-//
-// STAFF and ADMIN users can see all tickets.
-// CUSTOMER users can only see their own tickets.
+// STAFF and ADMIN users can view all queue tickets.
+// Customers and unauthenticated users cannot access
+// this staff queue-management endpoint.
 
 export async function GET() {
   try {
-    const session = await auth();
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        {
-          error: "Unauthorized.",
-        },
-        {
-          status: 401,
-        },
-      );
-    }
-
-    const isStaff = session.user.role === "STAFF" || session.user.role === "ADMIN";
+    await requireRole("STAFF");
 
     const tickets = await prisma.queueTicket.findMany({
-      where: isStaff
-        ? undefined
-        : {
-            customerId: session.user.id,
-          },
-
       include: {
         customer: {
           select: {
@@ -79,6 +60,28 @@ export async function GET() {
       status: 200,
     });
   } catch (error) {
+    if (error instanceof Error && error.message === "UNAUTHORIZED") {
+      return NextResponse.json(
+        {
+          error: "Unauthorized.",
+        },
+        {
+          status: 401,
+        },
+      );
+    }
+
+    if (error instanceof Error && error.message === "FORBIDDEN") {
+      return NextResponse.json(
+        {
+          error: "Forbidden.",
+        },
+        {
+          status: 403,
+        },
+      );
+    }
+
     console.error("GET /api/queues error:", error);
 
     return NextResponse.json(
@@ -94,13 +97,21 @@ export async function GET() {
 
 // POST /api/queues
 //
-// Creates a queue ticket for the authenticated customer.
+// Creates a queue ticket for an authenticated customer.
+//
+// NOTE:
+// The public customer ticket flow will eventually use
+// an unauthenticated ticket-creation endpoint. This
+// handler currently remains authenticated because the
+// existing QueueTicket model requires customerId.
 
 export async function POST(request: Request) {
   try {
     const session = await auth();
 
-    // Make sure the user is authenticated.
+    // The current implementation requires an authenticated
+    // customer because customerId is currently taken from
+    // the authenticated session.
     if (!session?.user?.id) {
       return NextResponse.json(
         {

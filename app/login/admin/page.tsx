@@ -7,7 +7,7 @@ import Footer from "@/components/layout/Footer";
 import LoginForm from "@/components/auth/LoginForm";
 
 export const metadata: Metadata = {
-  title: "Administrator Sign In | Intel-Q",
+  title: "Admin Login | Intel-Q",
   description: "Sign in to Intel-Q administration.",
 };
 
@@ -24,4 +24,3 @@ export default function AdminLoginPage() {
     </div>
   );
 }
-

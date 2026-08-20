@@ -144,6 +144,7 @@ exports.Prisma.QueueTicketScalarFieldEnum = {
   id: 'id',
   ticketNumber: 'ticketNumber',
   customerId: 'customerId',
+  customerName: 'customerName',
   branchId: 'branchId',
   serviceType: 'serviceType',
   status: 'status',

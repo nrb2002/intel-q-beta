@@ -1,10 +1,4 @@
-// Prisma schema file.
-// Learn more about it at:
-// https://pris.ly/d/prisma-schema
-//
-// Intel-Q Queue Management System
-// Database: PostgreSQL
-// ORM: Prisma
+// prisma/schema.prisma
 
 generator client {
   provider = "prisma-client-js"
@@ -60,19 +54,23 @@ model Branch {
 }
 
 model QueueTicket {
-  id           String      @id @default(uuid()) @db.Uuid
-  ticketNumber Int         @map("ticket_number")
-  customerId   String      @map("customer_id") @db.Uuid
-  branchId     String      @map("branch_id") @db.Uuid
-  serviceType  String      @map("service_type")
-  status       QueueStatus @default(WAITING)
+  id           String @id @default(uuid()) @db.Uuid
+  ticketNumber Int    @map("ticket_number")
+
+  customerId   String? @map("customer_id") @db.Uuid
+  customerName String  @map("customer_name")
+
+  branchId    String      @map("branch_id") @db.Uuid
+  serviceType String      @map("service_type")
+  status      QueueStatus @default(WAITING)
 
   createdAt   DateTime  @default(now()) @map("created_at")
   calledAt    DateTime? @map("called_at")
   completedAt DateTime? @map("completed_at")
 
-  customer User   @relation(fields: [customerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  customer User? @relation(fields: [customerId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Restrict, onUpdate: Cascade)
 
   @@unique([branchId, ticketNumber])
   @@index([customerId])

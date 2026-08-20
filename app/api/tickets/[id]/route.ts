@@ -1,10 +1,10 @@
-// app/api/queues/[id]/route.ts
+// app/api/tickets/[id]/route.ts
 
 import { NextResponse } from "next/server";
 
-import { requireRole } from "@/lib/auth/authorization";
 import { prisma } from "@/lib/db";
 import { QueueStatus } from "@/generated/prisma";
+import { requireRole } from "@/lib/auth/authorization";
 
 interface RouteContext {
   params: Promise<{
@@ -12,9 +12,78 @@ interface RouteContext {
   }>;
 }
 
-// GET /api/queues/[id]
+/**
+ * Convert a Prisma QueueTicket into the API response shape.
+ *
+ * Public customers have:
+ *   customerId = null
+ *
+ * Therefore customerName must come from QueueTicket.customerName
+ * rather than ticket.customer.firstName.
+ */
+function formatTicket(ticket: {
+  id: string;
+  ticketNumber: number;
+  customerId: string | null;
+  customerName: string;
+  serviceType: string;
+  status: QueueStatus;
+  createdAt: Date;
+  calledAt: Date | null;
+  completedAt: Date | null;
+  customer: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  } | null;
+  branch: {
+    id: string;
+    name: string;
+    address: string;
+    city: string;
+  };
+}) {
+  return {
+    id: ticket.id,
+
+    ticketNumber: ticket.ticketNumber,
+
+    customerName: ticket.customerName,
+
+    customer: ticket.customer
+      ? {
+          id: ticket.customer.id,
+          firstName: ticket.customer.firstName,
+          lastName: ticket.customer.lastName,
+          email: ticket.customer.email,
+        }
+      : null,
+
+    branch: {
+      id: ticket.branch.id,
+      name: ticket.branch.name,
+      address: ticket.branch.address,
+      city: ticket.branch.city,
+    },
+
+    branchName: ticket.branch.name,
+
+    serviceType: ticket.serviceType,
+
+    status: ticket.status,
+
+    createdAt: ticket.createdAt.toISOString(),
+
+    calledAt: ticket.calledAt?.toISOString() ?? null,
+
+    completedAt: ticket.completedAt?.toISOString() ?? null,
+  };
+}
+
+// GET /api/tickets/[id]
 //
-// STAFF and ADMIN users can view individual queue tickets.
+// STAFF and ADMIN users can view a ticket.
 
 export async function GET(_request: Request, context: RouteContext) {
   try {
@@ -51,7 +120,7 @@ export async function GET(_request: Request, context: RouteContext) {
     if (!ticket) {
       return NextResponse.json(
         {
-          error: "Queue ticket not found.",
+          error: "Ticket not found.",
         },
         {
           status: 404,
@@ -59,16 +128,8 @@ export async function GET(_request: Request, context: RouteContext) {
       );
     }
 
-    return NextResponse.json({
-      id: ticket.id,
-      ticketNumber: ticket.ticketNumber,
-      customerName: `${ticket.customer.firstName} ${ticket.customer.lastName}`,
-      branchName: ticket.branch.name,
-      serviceType: ticket.serviceType,
-      status: ticket.status,
-      createdAt: ticket.createdAt.toISOString(),
-      calledAt: ticket.calledAt?.toISOString(),
-      completedAt: ticket.completedAt?.toISOString(),
+    return NextResponse.json(formatTicket(ticket), {
+      status: 200,
     });
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHORIZED") {
@@ -93,11 +154,11 @@ export async function GET(_request: Request, context: RouteContext) {
       );
     }
 
-    console.error("GET /api/queues/[id] error:", error);
+    console.error("GET /api/tickets/[id] error:", error);
 
     return NextResponse.json(
       {
-        error: "Failed to fetch queue ticket.",
+        error: "Failed to fetch ticket.",
       },
       {
         status: 500,
@@ -106,9 +167,9 @@ export async function GET(_request: Request, context: RouteContext) {
   }
 }
 
-// PATCH /api/queues/[id]
+// PATCH /api/tickets/[id]
 //
-// STAFF and ADMIN users can transition queue tickets.
+// STAFF and ADMIN users can transition tickets.
 
 export async function PATCH(request: Request, context: RouteContext) {
   try {
@@ -131,7 +192,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       );
     }
 
-    if (typeof body !== "object" || body === null) {
+    if (typeof body !== "object" || body === null || Array.isArray(body)) {
       return NextResponse.json(
         {
           error: "Invalid request data.",
@@ -142,9 +203,22 @@ export async function PATCH(request: Request, context: RouteContext) {
       );
     }
 
-    const status = "status" in body && typeof body.status === "string" ? body.status : undefined;
+    const requestBody = body as Record<string, unknown>;
 
-    if (status && !Object.values(QueueStatus).includes(status as QueueStatus)) {
+    const status = typeof requestBody.status === "string" ? requestBody.status : undefined;
+
+    if (!status) {
+      return NextResponse.json(
+        {
+          error: "Ticket status is required.",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    if (!Object.values(QueueStatus).includes(status as QueueStatus)) {
       return NextResponse.json(
         {
           error: "Invalid queue status.",
@@ -164,7 +238,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (!existingTicket) {
       return NextResponse.json(
         {
-          error: "Queue ticket not found.",
+          error: "Ticket not found.",
         },
         {
           status: 404,
@@ -172,31 +246,36 @@ export async function PATCH(request: Request, context: RouteContext) {
       );
     }
 
+    const nextStatus = status as QueueStatus;
+
     const updateData: {
-      status?: QueueStatus;
+      status: QueueStatus;
       calledAt?: Date | null;
       completedAt?: Date | null;
-    } = {};
+    } = {
+      status: nextStatus,
+    };
 
-    if (status) {
-      updateData.status = status as QueueStatus;
-
-      if (status === "IN_SERVICE") {
+    switch (nextStatus) {
+      case QueueStatus.IN_SERVICE:
         updateData.calledAt = existingTicket.calledAt ?? new Date();
-      }
+        break;
 
-      if (status === "COMPLETED") {
+      case QueueStatus.COMPLETED:
         updateData.completedAt = new Date();
-      }
+        break;
 
-      if (status === "WAITING") {
+      case QueueStatus.WAITING:
         updateData.calledAt = null;
         updateData.completedAt = null;
-      }
+        break;
 
-      if (status === "CANCELLED") {
+      case QueueStatus.CANCELLED:
         updateData.completedAt = null;
-      }
+        break;
+
+      default:
+        break;
     }
 
     const ticket = await prisma.queueTicket.update({
@@ -227,16 +306,8 @@ export async function PATCH(request: Request, context: RouteContext) {
       },
     });
 
-    return NextResponse.json({
-      id: ticket.id,
-      ticketNumber: ticket.ticketNumber,
-      customerName: `${ticket.customer.firstName} ${ticket.customer.lastName}`,
-      branchName: ticket.branch.name,
-      serviceType: ticket.serviceType,
-      status: ticket.status,
-      createdAt: ticket.createdAt.toISOString(),
-      calledAt: ticket.calledAt?.toISOString(),
-      completedAt: ticket.completedAt?.toISOString(),
+    return NextResponse.json(formatTicket(ticket), {
+      status: 200,
     });
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHORIZED") {
@@ -261,11 +332,11 @@ export async function PATCH(request: Request, context: RouteContext) {
       );
     }
 
-    console.error("PATCH /api/queues/[id] error:", error);
+    console.error("PATCH /api/tickets/[id] error:", error);
 
     return NextResponse.json(
       {
-        error: "Failed to update queue ticket.",
+        error: "Failed to update ticket.",
       },
       {
         status: 500,
@@ -274,18 +345,13 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 }
 
-// DELETE /api/queues/[id]
+// DELETE /api/tickets/[id]
 //
-// STAFF and ADMIN users can delete queue tickets.
-//
-// This is currently STAFF-accessible because the existing
-// Intel-Q queue-management model allows staff to operate
-// queue tickets. If deletion becomes an ADMIN-only
-// operation later, change this to requireRole("ADMIN").
+// Only ADMIN users can delete tickets.
 
 export async function DELETE(_request: Request, context: RouteContext) {
   try {
-    await requireRole("STAFF");
+    await requireRole("ADMIN");
 
     const { id } = await context.params;
 
@@ -293,12 +359,16 @@ export async function DELETE(_request: Request, context: RouteContext) {
       where: {
         id,
       },
+
+      select: {
+        id: true,
+      },
     });
 
     if (!ticket) {
       return NextResponse.json(
         {
-          error: "Queue ticket not found.",
+          error: "Ticket not found.",
         },
         {
           status: 404,
@@ -312,9 +382,14 @@ export async function DELETE(_request: Request, context: RouteContext) {
       },
     });
 
-    return NextResponse.json({
-      message: "Queue ticket deleted successfully.",
-    });
+    return NextResponse.json(
+      {
+        message: "Ticket deleted successfully.",
+      },
+      {
+        status: 200,
+      },
+    );
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHORIZED") {
       return NextResponse.json(
@@ -338,11 +413,11 @@ export async function DELETE(_request: Request, context: RouteContext) {
       );
     }
 
-    console.error("DELETE /api/queues/[id] error:", error);
+    console.error("DELETE /api/tickets/[id] error:", error);
 
     return NextResponse.json(
       {
-        error: "Failed to delete queue ticket.",
+        error: "Failed to delete ticket.",
       },
       {
         status: 500,
